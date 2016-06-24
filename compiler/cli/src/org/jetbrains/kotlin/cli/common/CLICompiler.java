@@ -248,25 +248,39 @@ public abstract class CLICompiler<A extends CommonCompilerArguments> {
             configuration.put(CLIConfigurationKeys.COMPILER_JAR_LOCATOR, locator);
         }
 
-        if (arguments.languageVersion != null) {
-            LanguageVersion languageVersion = LanguageVersion.fromVersionString(arguments.languageVersion);
-            if (languageVersion != null) {
-                configuration.put(CommonConfigurationKeys.LANGUAGE_VERSION_SETTINGS, new LanguageVersionSettingsImpl(languageVersion));
-            }
-            else {
-                List<String> versionStrings = ArraysKt.map(LanguageVersion.values(), new Function1<LanguageVersion, String>() {
-                    @Override
-                    public String invoke(LanguageVersion version) {
-                        return version.getVersionString();
-                    }
-                });
-                String message = "Unknown language version: " + arguments.languageVersion + "\n" +
-                                 "Supported language versions: " + StringsKt.join(versionStrings, ", ");
-                configuration.getNotNull(CLIConfigurationKeys.MESSAGE_COLLECTOR_KEY).report(
-                        CompilerMessageSeverity.ERROR, message, CompilerMessageLocation.NO_LOCATION
-                );
-            }
+        LanguageVersion languageVersion = parseVersion(configuration, arguments.languageVersion, "language");
+        LanguageVersion apiVersion = parseVersion(configuration, arguments.apiVersion, "API");
+        if (languageVersion != null || apiVersion != null) {
+            configuration.put(CommonConfigurationKeys.LANGUAGE_VERSION_SETTINGS, new LanguageVersionSettingsImpl(
+                    languageVersion != null ? languageVersion : LanguageVersion.LATEST,
+                    apiVersion != null ? ApiVersion.createByLanguageVersion(apiVersion) : ApiVersion.LATEST
+            ));
         }
+    }
+
+    private static LanguageVersion parseVersion(
+            @NotNull CompilerConfiguration configuration, @Nullable String value, @NotNull String versionOf
+    ) {
+        if (value == null) return null;
+
+        LanguageVersion apiVersion = LanguageVersion.fromVersionString(value);
+        if (apiVersion != null) {
+            return apiVersion;
+        }
+
+        List<String> versionStrings = ArraysKt.map(LanguageVersion.values(), new Function1<LanguageVersion, String>() {
+            @Override
+            public String invoke(LanguageVersion version) {
+                return version.getVersionString();
+            }
+        });
+        String message = "Unknown " + versionOf + " version: " + value + "\n" +
+                         "Supported " + versionOf + " versions: " + StringsKt.join(versionStrings, ", ");
+        configuration.getNotNull(CLIConfigurationKeys.MESSAGE_COLLECTOR_KEY).report(
+                CompilerMessageSeverity.ERROR, message, CompilerMessageLocation.NO_LOCATION
+        );
+
+        return null;
     }
 
     protected abstract void setupPlatformSpecificArgumentsAndServices(

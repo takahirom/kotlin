@@ -34,6 +34,7 @@ import kotlin.jvm.functions.Function1;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.jetbrains.kotlin.asJava.DuplicateJvmSignatureUtilKt;
+import org.jetbrains.kotlin.config.ApiVersion;
 import org.jetbrains.kotlin.config.LanguageFeature;
 import org.jetbrains.kotlin.config.LanguageVersionSettings;
 import org.jetbrains.kotlin.config.LanguageVersionSettingsImpl;
@@ -70,6 +71,8 @@ public abstract class BaseDiagnosticsTest
 
     public static final String LANGUAGE_DIRECTIVE = "LANGUAGE";
     private static final Pattern LANGUAGE_PATTERN = Pattern.compile("([\\+\\-])(\\w+)\\s*");
+
+    public static final String API_VERSION_DIRECTIVE = "API_VERSION";
 
     public static final String CHECK_TYPE_DIRECTIVE = "CHECK_TYPE";
     public static final String CHECK_TYPE_PACKAGE = "tests._checkType";
@@ -154,11 +157,22 @@ public abstract class BaseDiagnosticsTest
         return jetFiles;
     }
 
-    @Nullable
-    private static LanguageVersionSettings parseLanguageDirective(Map<String, String> directiveMap) {
-        String directives = directiveMap.get(LANGUAGE_DIRECTIVE);
-        if (directives == null) return null;
+    @NotNull
+    private static LanguageVersionSettings parseLanguageVersionSettings(Map<String, String> directiveMap) {
+        String apiVersionString = directiveMap.get(API_VERSION_DIRECTIVE);
+        ApiVersion apiVersion =
+                apiVersionString != null ? ApiVersion.Companion.parse(apiVersionString) : ApiVersion.LATEST;
+        assert apiVersion != null : "Unknown API version: " + apiVersionString;
 
+        String directives = directiveMap.get(LANGUAGE_DIRECTIVE);
+        Map<LanguageFeature, Boolean> languageFeatures =
+                directives == null ? Collections.<LanguageFeature, Boolean>emptyMap() : collectLanguageFeatureMap(directives);
+
+        return new DiagnosticTestLanguageVersionSettings(languageFeatures, apiVersion);
+    }
+
+    @NotNull
+    private static Map<LanguageFeature, Boolean> collectLanguageFeatureMap(@NotNull String directives) {
         Matcher matcher = LANGUAGE_PATTERN.matcher(directives);
         if (!matcher.find()) {
             Assert.fail(
@@ -170,7 +184,7 @@ public abstract class BaseDiagnosticsTest
             );
         }
 
-        final Map<LanguageFeature, Boolean> values = new HashMap<LanguageFeature, Boolean>();
+        Map<LanguageFeature, Boolean> values = new HashMap<LanguageFeature, Boolean>();
         do {
             boolean enable = matcher.group(1).equals("+");
             String name = matcher.group(2);
@@ -187,16 +201,7 @@ public abstract class BaseDiagnosticsTest
         }
         while (matcher.find());
 
-        return new LanguageVersionSettings() {
-            @Override
-            public boolean supportsFeature(@NotNull LanguageFeature feature) {
-                Boolean enabled = values.get(feature);
-                if (enabled != null) {
-                    return enabled;
-                }
-                return LanguageVersionSettingsImpl.DEFAULT.supportsFeature(feature);
-            }
-        };
+        return values;
     }
 
     public static Condition<Diagnostic> parseDiagnosticFilterDirective(Map<String, String> directiveMap) {
@@ -289,6 +294,37 @@ public abstract class BaseDiagnosticsTest
         }
     }
 
+    public static class DiagnosticTestLanguageVersionSettings implements LanguageVersionSettings {
+        private final Map<LanguageFeature, Boolean> languageFeatures;
+        private final ApiVersion apiVersion;
+
+        public DiagnosticTestLanguageVersionSettings(
+                @NotNull Map<LanguageFeature, Boolean> languageFeatures, @NotNull ApiVersion apiVersion
+        ) {
+            this.languageFeatures = languageFeatures;
+            this.apiVersion = apiVersion;
+        }
+
+        @Override
+        public boolean supportsFeature(@NotNull LanguageFeature feature) {
+            Boolean enabled = languageFeatures.get(feature);
+            return enabled != null ? enabled : LanguageVersionSettingsImpl.DEFAULT.supportsFeature(feature);
+        }
+
+        @NotNull
+        @Override
+        public ApiVersion getApiVersion() {
+            return apiVersion;
+        }
+
+        @Override
+        public boolean equals(Object obj) {
+            return obj instanceof DiagnosticTestLanguageVersionSettings &&
+                   ((DiagnosticTestLanguageVersionSettings) obj).languageFeatures.equals(languageFeatures) &&
+                   ((DiagnosticTestLanguageVersionSettings) obj).apiVersion.equals(apiVersion);
+        }
+    }
+
     protected class TestFile {
         private final List<CheckerTestUtil.DiagnosedRange> diagnosedRanges = Lists.newArrayList();
         public final String expectedText;
@@ -311,7 +347,7 @@ public abstract class BaseDiagnosticsTest
         ) {
             this.module = module;
             this.whatDiagnosticsToConsider = parseDiagnosticFilterDirective(directives);
-            this.customLanguageVersionSettings = parseLanguageDirective(directives);
+            this.customLanguageVersionSettings = parseLanguageVersionSettings(directives);
             this.checkLazyLog = directives.containsKey(CHECK_LAZY_LOG_DIRECTIVE) || CHECK_LAZY_LOG_DEFAULT;
             this.declareCheckType = directives.containsKey(CHECK_TYPE_DIRECTIVE);
             this.declareFlexibleType = directives.containsKey(EXPLICIT_FLEXIBLE_TYPES_DIRECTIVE);

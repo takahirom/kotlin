@@ -87,3 +87,11 @@ public annotation class Suppress(vararg val names: String)
 @Retention(SOURCE)
 @MustBeDocumented
 public annotation class UnsafeVariance
+
+/**
+ * Specifies the first version of Kotlin where a declaration has appeared.
+ * Using the declaration and specifying an older API version (via the `-api-version` command line option) will result in an error.
+ */
+@Target(CLASS, PROPERTY, CONSTRUCTOR, FUNCTION, PROPERTY_GETTER, PROPERTY_SETTER)
+@Retention(AnnotationRetention.BINARY)
+public annotation class SinceKotlin(val version: String)

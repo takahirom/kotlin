@@ -52,15 +52,20 @@ enum class LanguageVersion(val versionString: String) {
 
 interface LanguageVersionSettings {
     fun supportsFeature(feature: LanguageFeature): Boolean
+
+    val apiVersion: ApiVersion
 }
 
-class LanguageVersionSettingsImpl(private val languageVersion: LanguageVersion) : LanguageVersionSettings {
+class LanguageVersionSettingsImpl(
+        private val languageVersion: LanguageVersion,
+        override val apiVersion: ApiVersion
+) : LanguageVersionSettings {
     override fun supportsFeature(feature: LanguageFeature): Boolean {
-        return languageVersion.ordinal >= feature.sinceVersion.ordinal
+        return languageVersion >= feature.sinceVersion
     }
 
     companion object {
         @JvmField
-        val DEFAULT = LanguageVersionSettingsImpl(LanguageVersion.LATEST)
+        val DEFAULT = LanguageVersionSettingsImpl(LanguageVersion.LATEST, ApiVersion.LATEST)
     }
 }

@@ -69,7 +69,7 @@ private val DEFAULT_CALL_CHECKERS = listOf(
         CoroutineSuspendCallChecker, BuilderFunctionsCallChecker
 )
 private val DEFAULT_TYPE_CHECKERS = emptyList<AdditionalTypeChecker>()
-private val DEFAULT_CLASSIFIER_USAGE_CHECKERS = listOf(DeprecatedClassifierUsageChecker())
+private val DEFAULT_CLASSIFIER_USAGE_CHECKERS = listOf(DeprecatedClassifierUsageChecker(), ApiVersionClassifierUsageChecker)
 
 
 abstract class PlatformConfigurator(

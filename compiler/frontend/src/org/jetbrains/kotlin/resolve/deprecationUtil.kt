@@ -192,5 +192,8 @@ fun DeclarationDescriptor.isHiddenInResolution(languageVersionSettings: Language
         if (isHiddenToOvercomeSignatureClash) return true
         if (isHiddenForResolutionEverywhereBesideSupercalls && !isSuperCall) return true
     }
+
+    if (languageVersionSettings.getSinceVersionIfInaccessible(this) != null) return true
+
     return getDeprecation()?.deprecationLevel == HIDDEN
 }

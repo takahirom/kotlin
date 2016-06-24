@@ -1,0 +1,4 @@
+compiler/testData/cli/jvm/apiVersion.kt:2:19: error: unresolved reference: isInstance
+    String::class.isInstance(42)
+                  ^
+COMPILATION_ERROR
