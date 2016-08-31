@@ -35,7 +35,7 @@ open class LinkedHashMap<K, V> : HashMap<K, V>, Map<K, V> {
      * small modifications. Paying a small storage cost only if you use
      * LinkedHashMap and minimizing code size seemed like a better tradeoff
      */
-    private class ChainEntry<K, V>(key: K, value: V) : AbstractMap.SimpleEntry<K, V>(key, value) {
+    private class ChainEntry<K, V>(key: K, value: V) : AbstractMutableMap.SimpleEntry<K, V>(key, value) {
         internal var next: ChainEntry<K, V>? = null
         internal var prev: ChainEntry<K, V>? = null
     }
