@@ -27,6 +27,7 @@ import org.jetbrains.kotlin.idea.test.KotlinLightCodeInsightFixtureTestCase;
 import org.jetbrains.kotlin.psi.KtDeclaration;
 import org.jetbrains.kotlin.psi.KtFile;
 import org.jetbrains.kotlin.psi.KtTreeVisitorVoid;
+import org.jetbrains.kotlin.test.KotlinTestUtils;
 
 import java.io.File;
 
@@ -89,9 +90,9 @@ public abstract class AbstractPsiCheckerTest extends KotlinLightCodeInsightFixtu
         });
     }
 
-    @NotNull
     @Override
-    protected LightProjectDescriptor getProjectDescriptor() {
-        return getProjectDescriptorFromTestName();
+    protected String getTestDataPath() {
+        return KotlinTestUtils.getTestsRoot(this.getClass());
     }
+
 }
