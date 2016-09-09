@@ -27,7 +27,7 @@ import com.intellij.util.containers.ContainerUtil;
 import com.intellij.util.containers.hash.LinkedHashMap;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
-import org.jetbrains.kotlin.builtins.ReflectionTypes;
+import org.jetbrains.kotlin.builtins.KotlinBuiltIns;
 import org.jetbrains.kotlin.descriptors.*;
 import org.jetbrains.kotlin.js.config.JsConfig;
 import org.jetbrains.kotlin.js.config.LibrarySourcesConfig;
@@ -82,9 +82,6 @@ public final class StaticContext {
     private final StandardClasses standardClasses;
 
     @NotNull
-    private final ReflectionTypes reflectionTypes;
-
-    @NotNull
     private final JsScope rootScope;
 
     @NotNull
@@ -133,7 +130,6 @@ public final class StaticContext {
         this.rootScope = rootScope;
         this.standardClasses = standardClasses;
         this.config = config;
-        this.reflectionTypes = new ReflectionTypes(moduleDescriptor);
     }
 
     @NotNull
@@ -159,11 +155,6 @@ public final class StaticContext {
     @NotNull
     public Namer getNamer() {
         return namer;
-    }
-
-    @NotNull
-    public ReflectionTypes getReflectionTypes() {
-        return reflectionTypes;
     }
 
     @NotNull
@@ -266,6 +257,17 @@ public final class StaticContext {
     private final class NameGenerator extends Generator<JsName> {
 
         public NameGenerator() {
+            Rule<JsName> anyAsObject = new Rule<JsName>() {
+                @Nullable
+                @Override
+                public JsName apply(@NotNull DeclarationDescriptor descriptor) {
+                    if (descriptor instanceof ClassDescriptor && KotlinBuiltIns.isAny((ClassDescriptor) descriptor)) {
+                        return rootScope.declareName("Object");
+                    }
+                    return null;
+                }
+            };
+
             Rule<JsName> namesForDynamic = new Rule<JsName>() {
                 @Override
                 @Nullable
@@ -422,6 +424,7 @@ public final class StaticContext {
                 }
             };
 
+            addRule(anyAsObject);
             addRule(namesForDynamic);
             addRule(localClasses);
             addRule(namesForStandardClasses);
@@ -681,7 +684,15 @@ public final class StaticContext {
                     return null;
                 }
             };
+            Rule<Boolean> anyHasNoQualifier = new Rule<Boolean>() {
+                @Nullable
+                @Override
+                public Boolean apply(@NotNull DeclarationDescriptor descriptor) {
+                    return descriptor instanceof ClassDescriptor && KotlinBuiltIns.isAny((ClassDescriptor) descriptor) ? true : null;
+                }
+            };
             addRule(propertiesInClassHaveNoQualifiers);
+            addRule(anyHasNoQualifier);
         }
     }
 

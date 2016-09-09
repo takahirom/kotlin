@@ -82,4 +82,8 @@ public final class StandardClassesTest extends SingleFileTranslationTest {
     public void testMutableMapRemoveWithCollision() throws Exception {
         checkFooBoxIsOk();
     }
+
+    public void testAny() throws Exception {
+        checkFooBoxIsOk();
+    }
 }

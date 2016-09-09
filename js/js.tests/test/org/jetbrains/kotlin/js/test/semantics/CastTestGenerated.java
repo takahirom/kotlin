@@ -119,12 +119,6 @@ public class CastTestGenerated extends AbstractCastTest {
         doTest(fileName);
     }
 
-    @TestMetadata("noRuntimeTypeCheck.kt")
-    public void testNoRuntimeTypeCheck() throws Exception {
-        String fileName = KotlinTestUtils.navigationMetadata("js/js.translator/testData/expression/cast/cases/noRuntimeTypeCheck.kt");
-        doTest(fileName);
-    }
-
     @TestMetadata("primitiveToClass.kt")
     public void testPrimitiveToClass() throws Exception {
         String fileName = KotlinTestUtils.navigationMetadata("js/js.translator/testData/expression/cast/cases/primitiveToClass.kt");
