@@ -184,12 +184,14 @@ class NameSuggestion {
             if (nativeName != null) return Pair(nativeName, true)
 
             val stable = shouldBeStable(descriptor)
-            val finalName = if (overriddenDescriptor is CallableDescriptor && stable) {
-                getStableMangledName(baseName, getArgumentTypesAsString(overriddenDescriptor))
+            val finalName = when {
+                overriddenDescriptor is CallableDescriptor && stable -> {
+                    getStableMangledName(baseName, getArgumentTypesAsString(overriddenDescriptor))
+                }
+                shouldMangleUnstable(overriddenDescriptor) -> baseName + "_private\$"
+                else -> baseName
             }
-            else {
-                baseName
-            }
+
             return Pair(finalName, stable)
         }
 
@@ -204,6 +206,20 @@ class NameSuggestion {
             argTypes.append(descriptor.valueParameters.joinToString(",") { it.type.getJetTypeFqName(true) })
 
             return argTypes.toString()
+        }
+
+        // Sometimes private members of a class can clash with public members of subclasses, therefore we must
+        // mangle them
+        private fun shouldMangleUnstable(descriptor: DeclarationDescriptor): Boolean {
+            if (descriptor is ClassDescriptor) return false
+            if (DescriptorUtils.isDescriptorWithLocalVisibility(descriptor)) return false
+
+            val containingClass = DescriptorUtils.getContainingClass(descriptor)
+            if (containingClass != null && containingClass.modality == Modality.OPEN) {
+                return containingClass.visibility.isPublicAPI
+            }
+
+            return false
         }
 
         fun getStableMangledName(suggestedName: String, forCalculateId: String): String {
