@@ -196,6 +196,10 @@ public final class ClosureTest extends SingleFileTranslationTest {
         checkFooBoxIsOk();
     }
 
+    public void testEnclosingClassFromInnerLocalClass() throws Exception {
+        checkFooBoxIsOk();
+    }
+
     public void testObjectWithInvokeOperator() throws Exception {
         checkFooBoxIsOk();
     }
