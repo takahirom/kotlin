@@ -6,7 +6,9 @@ fun main(args: Array<String>) {
 // WITH_ORDER
 // EXIST: { lookupString:"Array", tailText:"<T> (kotlin)" }
 // EXIST_JAVA_ONLY: { lookupString:"Array", tailText:" (java.sql)" }
-// EXIST: { lookupString:"ArrayList", tailText:"<E> (java.util)" }
+// EXIST_JS_ONLY: { lookupString:"ArrayList", tailText:"<E> (kotlin.collections)" }
+// EXIST_JAVA_ONLY: { lookupString:"ArrayList", typeText:"public typealias ArrayList<T>  = ArrayList<T> defined in kotlin.collections" }
+// EXIST_JAVA_ONLY: { lookupString:"ArrayList", tailText:"<E> (java.util)" }
 
 
 

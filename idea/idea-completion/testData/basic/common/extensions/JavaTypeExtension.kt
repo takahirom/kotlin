@@ -3,7 +3,7 @@ fun <T> Iterable<T>.first() : T? {
 }
 
 fun main(args : Array<String>) {
-    val test = java.util.HashSet<Int>()
+    val test = HashSet<Int>() // aliased in JVM to java.util.HashSet
     test.<caret>
 }
 
