@@ -77,6 +77,7 @@ import java.util.Set;
 import static org.jetbrains.kotlin.builtins.KotlinBuiltIns.isNullableAny;
 import static org.jetbrains.kotlin.codegen.AsmUtil.*;
 import static org.jetbrains.kotlin.codegen.JvmCodegenUtil.isAnnotationOrJvm6Interface;
+import static org.jetbrains.kotlin.codegen.JvmCodegenUtil.isJvm8Interface;
 import static org.jetbrains.kotlin.codegen.JvmCodegenUtil.isJvm8InterfaceMember;
 import static org.jetbrains.kotlin.codegen.serialization.JvmSerializationBindings.METHOD_FOR_FUNCTION;
 import static org.jetbrains.kotlin.descriptors.CallableMemberDescriptor.Kind.DECLARATION;
@@ -161,9 +162,7 @@ public class FunctionCodegen {
         OwnerKind contextKind = methodContext.getContextKind();
         if (isInterface(functionDescriptor.getContainingDeclaration()) &&
             functionDescriptor.getVisibility() == Visibilities.PRIVATE &&
-            (isJvm8InterfaceMember(functionDescriptor, state)
-             ? contextKind == OwnerKind.DEFAULT_IMPLS
-             : contextKind != OwnerKind.DEFAULT_IMPLS)) {
+            !processInterfaceMember(functionDescriptor, contextKind, state)) {
             return;
         }
 
@@ -197,7 +196,7 @@ public class FunctionCodegen {
 
         generateBridges(functionDescriptor);
 
-        if (isJvm8InterfaceMember(functionDescriptor, state) && contextKind != OwnerKind.DEFAULT_IMPLS) {
+        if (isJvm8InterfaceMember(functionDescriptor, state) && contextKind != OwnerKind.DEFAULT_IMPLS && state.getGenerateDefaultImplsForJvm8()) {
             generateDelegateForDefaultImpl(functionDescriptor, origin.getElement());
         }
 
@@ -738,7 +737,7 @@ public class FunctionCodegen {
     ) {
         DeclarationDescriptor contextClass = owner.getContextDescriptor().getContainingDeclaration();
 
-        if (kind != OwnerKind.DEFAULT_IMPLS && isInterface(contextClass)) {
+        if (isInterface(contextClass) && !processInterface(contextClass, kind, state)) {
             return;
         }
 
@@ -1123,5 +1122,22 @@ public class FunctionCodegen {
                     }
                 }
         );
+    }
+
+    public static boolean processInterfaceMember(
+            @NotNull CallableMemberDescriptor function,
+            @NotNull OwnerKind kind,
+            @NotNull GenerationState state
+    ) {
+        return processInterface(function.getContainingDeclaration(), kind, state);
+    }
+
+    public static boolean processInterface(
+            @NotNull DeclarationDescriptor contextClass,
+            @NotNull OwnerKind kind,
+            @NotNull GenerationState state
+    ) {
+        assert isInterface(contextClass) : "'processInterface' method should be called only for interfaces, but: " + contextClass;
+        return isJvm8Interface(contextClass, state) ? kind != OwnerKind.DEFAULT_IMPLS : kind == OwnerKind.DEFAULT_IMPLS;
     }
 }
