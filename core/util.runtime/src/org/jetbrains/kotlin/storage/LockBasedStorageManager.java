@@ -32,6 +32,15 @@ import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
 public class LockBasedStorageManager implements StorageManager {
+    private static final String PACKAGE_NAME = "org.jetbrains.kotlin.storage";
+
+    static {
+        Package pkg = LockBasedStorageManager.class.getPackage();
+        if (pkg != null) {
+            assert PACKAGE_NAME.equals(pkg.getName());
+        }
+    }
+
     public interface ExceptionHandlingStrategy {
         ExceptionHandlingStrategy THROW = new ExceptionHandlingStrategy() {
             @NotNull
@@ -483,14 +492,13 @@ public class LockBasedStorageManager implements StorageManager {
 
     @NotNull
     private static <T extends Throwable> T sanitizeStackTrace(@NotNull T throwable) {
-        String storagePackageName = LockBasedStorageManager.class.getPackage().getName();
         StackTraceElement[] stackTrace = throwable.getStackTrace();
         int size = stackTrace.length;
 
         int firstNonStorage = -1;
         for (int i = 0; i < size; i++) {
             // Skip everything (memoized functions and lazy values) from package org.jetbrains.kotlin.storage
-            if (!stackTrace[i].getClassName().startsWith(storagePackageName)) {
+            if (!stackTrace[i].getClassName().startsWith(PACKAGE_NAME)) {
                 firstNonStorage = i;
                 break;
             }
