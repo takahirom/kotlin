@@ -110,12 +110,15 @@ private fun resolveQualifierReferenceTarget(
         val classValueDescriptor = classifier.classValueDescriptor
         if (selectorIsCallable && classValueDescriptor != null) {
             val classValueTypeDescriptor = classifier.classValueTypeDescriptor!!
-            context.trace.record(BindingContext.REFERENCE_TARGET, qualifier.referenceExpression, classValueDescriptor)
+            val referenceExpression = qualifier.referenceExpression
+            context.trace.record(BindingContext.REFERENCE_TARGET, referenceExpression, classValueDescriptor)
             context.trace.recordType(qualifier.expression, classValueTypeDescriptor.defaultType)
             if (classifier.hasCompanionObject) {
-                context.trace.record(BindingContext.SHORT_REFERENCE_TO_COMPANION_OBJECT, qualifier.referenceExpression, classifier)
-                for (checker in classifierUsageCheckers) {
-                    checker.check(classValueDescriptor, context.trace, qualifier.referenceExpression, languageVersionSettings)
+                context.trace.record(BindingContext.SHORT_REFERENCE_TO_COMPANION_OBJECT, referenceExpression, classifier)
+                if (shouldCheckClassifierUsage(referenceExpression)) {
+                    for (checker in classifierUsageCheckers) {
+                        checker.check(classValueDescriptor, context.trace, referenceExpression, languageVersionSettings)
+                    }
                 }
             }
             return classValueTypeDescriptor

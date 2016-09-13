@@ -630,7 +630,7 @@ class QualifiedExpressionResolver(
 
         trace.record(BindingContext.REFERENCE_TARGET, referenceExpression, descriptor)
 
-        if (descriptor is ClassifierDescriptor) {
+        if (descriptor is ClassifierDescriptor && shouldCheckClassifierUsage(referenceExpression)) {
             for (checker in classifierUsageCheckers) {
                 checker.check(descriptor, trace, referenceExpression, languageVersionSettings)
             }
