@@ -131,6 +131,7 @@ internal class FunctionsTypingVisitor(facade: ExpressionTypingInternals) : Expre
                 Annotations.EMPTY,
                 extensionReceiverParameter?.type,
                 valueParameters.map { it.type },
+                valueParameters.map { it.name },
                 returnType ?: return null
         )
     }
