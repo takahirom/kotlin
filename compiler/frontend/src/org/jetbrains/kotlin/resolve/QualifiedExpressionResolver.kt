@@ -18,6 +18,7 @@ package org.jetbrains.kotlin.resolve
 
 import com.intellij.psi.impl.source.DummyHolder
 import com.intellij.util.SmartList
+import org.jetbrains.kotlin.config.LanguageVersionSettings
 import org.jetbrains.kotlin.descriptors.*
 import org.jetbrains.kotlin.diagnostics.Errors
 import org.jetbrains.kotlin.incremental.KotlinLookupLocation
@@ -39,7 +40,10 @@ import org.jetbrains.kotlin.types.expressions.isWithoutValueArguments
 import org.jetbrains.kotlin.utils.addIfNotNull
 import org.jetbrains.kotlin.utils.addToStdlib.check
 
-class QualifiedExpressionResolver(val classifierUsageCheckers: Iterable<ClassifierUsageChecker>) {
+class QualifiedExpressionResolver(
+        val classifierUsageCheckers: Iterable<ClassifierUsageChecker>,
+        val languageVersionSettings: LanguageVersionSettings
+) {
     fun resolvePackageHeader(
             packageDirective: KtPackageDirective,
             module: ModuleDescriptor,
@@ -628,7 +632,7 @@ class QualifiedExpressionResolver(val classifierUsageCheckers: Iterable<Classifi
 
         if (descriptor is ClassifierDescriptor) {
             for (checker in classifierUsageCheckers) {
-                checker.check(descriptor, trace, referenceExpression)
+                checker.check(descriptor, trace, referenceExpression, languageVersionSettings)
             }
         }
 

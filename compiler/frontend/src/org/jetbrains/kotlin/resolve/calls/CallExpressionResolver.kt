@@ -20,6 +20,7 @@ import com.intellij.lang.ASTNode
 import com.intellij.psi.PsiElement
 import com.intellij.psi.util.PsiTreeUtil
 import org.jetbrains.kotlin.builtins.KotlinBuiltIns
+import org.jetbrains.kotlin.config.LanguageVersionSettings
 import org.jetbrains.kotlin.descriptors.ConstructorDescriptor
 import org.jetbrains.kotlin.descriptors.FunctionDescriptor
 import org.jetbrains.kotlin.descriptors.VariableDescriptor
@@ -71,7 +72,8 @@ class CallExpressionResolver(
         private val dataFlowAnalyzer: DataFlowAnalyzer,
         private val builtIns: KotlinBuiltIns,
         private val qualifiedExpressionResolver: QualifiedExpressionResolver,
-        private val classifierUsageCheckers: Iterable<ClassifierUsageChecker>
+        private val classifierUsageCheckers: Iterable<ClassifierUsageChecker>,
+        private val languageVersionSettings: LanguageVersionSettings
 ) {
     private lateinit var expressionTypingServices: ExpressionTypingServices
 
@@ -162,7 +164,7 @@ class CallExpressionResolver(
         val temporaryForQualifier = TemporaryTraceAndCache.create(context, "trace to resolve as qualifier", nameExpression)
         val contextForQualifier = context.replaceTraceAndCache(temporaryForQualifier)
         qualifiedExpressionResolver.resolveNameExpressionAsQualifierForDiagnostics(nameExpression, receiver, contextForQualifier)?.let {
-            resolveQualifierAsStandaloneExpression(it, contextForQualifier, classifierUsageCheckers)
+            resolveQualifierAsStandaloneExpression(it, contextForQualifier, classifierUsageCheckers, languageVersionSettings)
             temporaryForQualifier.commit()
         } ?: temporaryForVariable.commit()
         return noTypeInfo(context)
@@ -449,7 +451,7 @@ class CallExpressionResolver(
             context.trace.get(BindingContext.REFERENCE_TARGET, it)
         }
 
-        resolveQualifierAsReceiverInExpression(qualifier, selectorDescriptor, context, classifierUsageCheckers)
+        resolveQualifierAsReceiverInExpression(qualifier, selectorDescriptor, context, classifierUsageCheckers, languageVersionSettings)
     }
 
     companion object {

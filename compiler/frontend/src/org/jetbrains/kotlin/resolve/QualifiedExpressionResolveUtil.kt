@@ -16,6 +16,7 @@
 
 package org.jetbrains.kotlin.resolve
 
+import org.jetbrains.kotlin.config.LanguageVersionSettings
 import org.jetbrains.kotlin.descriptors.*
 import org.jetbrains.kotlin.diagnostics.Errors
 import org.jetbrains.kotlin.resolve.descriptorUtil.classValueDescriptor
@@ -28,9 +29,10 @@ fun resolveQualifierAsReceiverInExpression(
         qualifier: Qualifier,
         selector: DeclarationDescriptor?,
         context: ExpressionTypingContext,
-        classifierUsageCheckers: Iterable<ClassifierUsageChecker>
+        classifierUsageCheckers: Iterable<ClassifierUsageChecker>,
+        languageVersionSettings: LanguageVersionSettings
 ): DeclarationDescriptor {
-    val referenceTarget = resolveQualifierReferenceTarget(qualifier, selector, context, classifierUsageCheckers)
+    val referenceTarget = resolveQualifierReferenceTarget(qualifier, selector, context, classifierUsageCheckers, languageVersionSettings)
 
     if (referenceTarget is TypeParameterDescriptor) {
         context.trace.report(Errors.TYPE_PARAMETER_ON_LHS_OF_DOT.on(qualifier.referenceExpression, referenceTarget))
@@ -42,9 +44,10 @@ fun resolveQualifierAsReceiverInExpression(
 fun resolveQualifierAsStandaloneExpression(
         qualifier: Qualifier,
         context: ExpressionTypingContext,
-        classifierUsageCheckers: Iterable<ClassifierUsageChecker>
+        classifierUsageCheckers: Iterable<ClassifierUsageChecker>,
+        languageVersionSettings: LanguageVersionSettings
 ): DeclarationDescriptor {
-    val referenceTarget = resolveQualifierReferenceTarget(qualifier, null, context, classifierUsageCheckers)
+    val referenceTarget = resolveQualifierReferenceTarget(qualifier, null, context, classifierUsageCheckers, languageVersionSettings)
 
     when (referenceTarget) {
         is TypeAliasDescriptor -> {
@@ -74,7 +77,8 @@ private fun resolveQualifierReferenceTarget(
         qualifier: Qualifier,
         selector: DeclarationDescriptor?,
         context: ExpressionTypingContext,
-        classifierUsageCheckers: Iterable<ClassifierUsageChecker>
+        classifierUsageCheckers: Iterable<ClassifierUsageChecker>,
+        languageVersionSettings: LanguageVersionSettings
 ): DeclarationDescriptor {
     if (qualifier is TypeParameterQualifier) {
         return qualifier.descriptor
@@ -111,7 +115,7 @@ private fun resolveQualifierReferenceTarget(
             if (classifier.hasCompanionObject) {
                 context.trace.record(BindingContext.SHORT_REFERENCE_TO_COMPANION_OBJECT, qualifier.referenceExpression, classifier)
                 for (checker in classifierUsageCheckers) {
-                    checker.check(classValueDescriptor, context.trace, qualifier.referenceExpression)
+                    checker.check(classValueDescriptor, context.trace, qualifier.referenceExpression, languageVersionSettings)
                 }
             }
             return classValueTypeDescriptor

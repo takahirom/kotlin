@@ -17,13 +17,19 @@
 package org.jetbrains.kotlin.resolve
 
 import com.intellij.psi.PsiElement
+import org.jetbrains.kotlin.config.LanguageVersionSettings
 import org.jetbrains.kotlin.descriptors.ClassifierDescriptor
 import org.jetbrains.kotlin.psi.KtAnnotationEntry
 import org.jetbrains.kotlin.psi.KtStubbedPsiUtil
 import org.jetbrains.kotlin.psi.KtSuperTypeCallEntry
 
 class DeprecatedClassifierUsageChecker : ClassifierUsageChecker {
-    override fun check(targetDescriptor: ClassifierDescriptor, trace: BindingTrace, element: PsiElement) {
+    override fun check(
+            targetDescriptor: ClassifierDescriptor,
+            trace: BindingTrace,
+            element: PsiElement,
+            languageVersionSettings: LanguageVersionSettings
+    ) {
         // Do not check types in annotation entries to prevent cycles in resolve, rely on call message
         val annotationEntry = KtStubbedPsiUtil.getPsiOrStubParent(element, KtAnnotationEntry::class.java, true)
         if (annotationEntry != null && annotationEntry.calleeExpression!!.constructorReferenceExpression == element) return

@@ -17,8 +17,14 @@
 package org.jetbrains.kotlin.resolve
 
 import com.intellij.psi.PsiElement
+import org.jetbrains.kotlin.config.LanguageVersionSettings
 import org.jetbrains.kotlin.descriptors.ClassifierDescriptor
 
 interface ClassifierUsageChecker {
-    fun check(targetDescriptor: ClassifierDescriptor, trace: BindingTrace, element: PsiElement)
+    fun check(
+            targetDescriptor: ClassifierDescriptor,
+            trace: BindingTrace,
+            element: PsiElement,
+            languageVersionSettings: LanguageVersionSettings
+    )
 }
