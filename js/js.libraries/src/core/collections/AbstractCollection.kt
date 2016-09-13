@@ -32,8 +32,6 @@ public abstract class AbstractMutableCollection<E> protected constructor() : Abs
         return false
     }
 
-    override fun isEmpty(): Boolean = size == 0
-
     override fun addAll(elements: Collection<E>): Boolean {
         var modified = false
         for (element in elements) {
