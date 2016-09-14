@@ -6,4 +6,4 @@ object O {
 
 typealias A = O
 
-fun box(): String = O()
+fun box(): String = A()
