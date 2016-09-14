@@ -5,30 +5,42 @@ package kotlin
 fun fail(message: String? = null): Nothing = js("throw new Error(message)")
 
 fun <T> assertEquals(expected: T, actual: T, message: String? = null) {
-    if (!equal(expected, actual)) {
+    if (expected != actual) {
         val msg = if (message == null) "" else (" message = '" + message + "',")
         fail("Unexpected value:$msg expected = '$expected', actual = '$actual'")
     }
 }
 
 fun <T> assertNotEquals(illegal: T, actual: T, message: String? = null) {
-    if (equal(illegal, actual)) {
+    if (illegal == actual) {
         val msg = if (message == null) "" else (" message = '" + message + "',")
         fail("Illegal value:$msg illegal = '$illegal', actual = '$actual'")
     }
 }
 
-private fun equal(a: Any?, b: Any?): Boolean {
-    if (a is Array<*> && b is Array<*>) {
-        if (a.size != b.size) return false
-        for (i in 0..(a.size - 1)) {
-            if (!equal(a[i], b[i])) return false
-        }
-        return true
-    } else {
-        return a == b
+fun <T> assertArrayEquals(expected: Array<in T>, actual: Array<in T>, message: String? = null) {
+    if (!arraysEqual(expected, actual)) {
+        val msg = if (message == null) "" else (" message = '" + message + "',")
+        fail("Unexpected array:$msg expected = '$expected', actual = '$actual'")
     }
 }
+
+private fun <T> arraysEqual(first: Array<in T>, second: Array<in T>): Boolean {
+    if (first === second) return true
+    if (first.size != second.size) return false
+    for (index in first.indices) {
+        if (!equal(first[index], second[index])) return false
+    }
+    return true
+}
+
+private fun equal(first: Any?, second: Any?) =
+    if (first is Array<*> && second is Array<*>) {
+        arraysEqual(first, second)
+    }
+    else {
+        first == second
+    }
 
 fun assertTrue(actual: Boolean, message: String? = null) = assertEquals(true, actual, message)
 
