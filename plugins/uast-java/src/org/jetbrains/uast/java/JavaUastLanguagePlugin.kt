@@ -22,6 +22,7 @@ import com.intellij.openapi.project.Project
 import com.intellij.psi.*
 import org.jetbrains.uast.*
 import org.jetbrains.uast.java.expressions.JavaUSynchronizedExpression
+import org.jetbrains.uast.psi.PsiElementBacked
 
 class JavaUastLanguagePlugin(val project: Project) : UastLanguagePlugin {
     override val priority = 0
@@ -31,8 +32,13 @@ class JavaUastLanguagePlugin(val project: Project) : UastLanguagePlugin {
     override val language: Language
         get() = JavaLanguage.INSTANCE
 
-    override fun isExpressionValueUsed(element: UExpression): Boolean {
-
+    override fun isExpressionValueUsed(element: UExpression): Boolean = when (element) {
+        is JavaUVariableDeclarationsExpression -> false
+        is UnknownJavaExpression -> (element.containingElement as? UExpression)?.let { isExpressionValueUsed(it) } ?: false
+        else -> {
+            val statement = (element as? PsiElementBacked)?.psi as? PsiStatement
+            statement != null && statement.parent !is PsiExpressionStatement
+        }
     }
 
     override fun getMethodCallExpression(

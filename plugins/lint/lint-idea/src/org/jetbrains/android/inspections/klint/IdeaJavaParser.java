@@ -26,6 +26,7 @@ import com.android.tools.klint.detector.api.Severity;
 import com.google.common.collect.Sets;
 import com.intellij.codeInsight.AnnotationUtil;
 import com.intellij.openapi.application.ApplicationManager;
+import com.intellij.openapi.components.ServiceManager;
 import com.intellij.openapi.project.Project;
 import com.intellij.openapi.vfs.VfsUtilCore;
 import com.intellij.openapi.vfs.VirtualFile;
@@ -35,12 +36,8 @@ import com.intellij.psi.util.InheritanceUtil;
 import lombok.ast.Node;
 import lombok.ast.Position;
 import org.jetbrains.uast.UastContext;
-import org.jetbrains.uast.UastLanguagePlugin;
-import org.jetbrains.uast.java.JavaUastLanguagePlugin;
-import org.jetbrains.uast.kotlin.KotlinUastLanguagePlugin;
 
 import java.io.File;
-import java.util.ArrayList;
 import java.util.List;
 
 public class IdeaJavaParser extends JavaParser {
@@ -54,10 +51,7 @@ public class IdeaJavaParser extends JavaParser {
         this.myProject = myProject;
         this.myEvaluator = new MyJavaEvaluator(myProject);
 
-        List<UastLanguagePlugin> languagePlugins = new ArrayList<UastLanguagePlugin>();
-        languagePlugins.add(new JavaUastLanguagePlugin());
-        languagePlugins.add(new KotlinUastLanguagePlugin());
-        myContext = new UastContext(languagePlugins);
+        myContext = ServiceManager.getService(myProject, UastContext.class);
     }
 
     @Override

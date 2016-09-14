@@ -34,6 +34,6 @@ class KotlinUForEachExpression(
     override val variable by lz {
         val parameter = psi.loopParameter?.let { UastKotlinPsiParameter.create(it, psi, this, 0) } 
                 ?: UastPsiParameterNotResolved(psi, KotlinLanguage.INSTANCE)
-        KotlinUParameter(parameter, getLanguagePlugin(), this)
+        KotlinUParameter(parameter, this)
     }
 }

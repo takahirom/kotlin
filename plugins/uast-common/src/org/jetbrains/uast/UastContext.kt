@@ -16,7 +16,7 @@ class UastContext(val project: Project) : UastLanguagePlugin {
     override val priority: Int
         get() = 0
 
-    private val languagePlugins: Collection<UastLanguagePlugin>
+    val languagePlugins: Collection<UastLanguagePlugin>
         get() = UastLanguagePlugin.getInstances(project)
 
     fun findPlugin(element: PsiElement): UastLanguagePlugin? {
@@ -25,6 +25,12 @@ class UastContext(val project: Project) : UastLanguagePlugin {
     }
 
     override fun isFileSupported(fileName: String) = languagePlugins.any { it.isFileSupported(fileName) }
+
+    fun getMethod(method: PsiMethod): UMethod = convertWithParent<UMethod>(method)!!
+
+    fun getVariable(variable: PsiVariable): UVariable = convertWithParent<UVariable>(variable)!!
+
+    fun getClass(clazz: PsiClass): UClass = convertWithParent<UClass>(clazz)!!
 
     override fun convertElement(element: PsiElement, parent: UElement?, requiredType: Class<out UElement>?): UElement? {
         return findPlugin(element)?.convertElement(element, parent, requiredType)

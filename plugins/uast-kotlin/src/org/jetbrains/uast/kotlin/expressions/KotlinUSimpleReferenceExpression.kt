@@ -22,12 +22,14 @@ import com.intellij.psi.PsiNamedElement
 import org.jetbrains.kotlin.descriptors.CallableDescriptor
 import org.jetbrains.kotlin.descriptors.ConstructorDescriptor
 import org.jetbrains.kotlin.descriptors.DeclarationDescriptor
-import org.jetbrains.kotlin.idea.references.SyntheticPropertyAccessorReference
 import org.jetbrains.kotlin.lexer.KtTokens
-import org.jetbrains.kotlin.load.java.descriptors.JavaMethodDescriptor
 import org.jetbrains.kotlin.psi.*
+import org.jetbrains.kotlin.psi.psiUtil.getAssignmentByLHS
+import org.jetbrains.kotlin.psi.psiUtil.getQualifiedExpressionForSelectorOrThis
 import org.jetbrains.kotlin.resolve.calls.callUtil.getResolvedCall
 import org.jetbrains.kotlin.resolve.calls.model.ResolvedCall
+import org.jetbrains.kotlin.synthetic.SyntheticJavaPropertyDescriptor
+import org.jetbrains.kotlin.utils.addToStdlib.constant
 import org.jetbrains.uast.*
 import org.jetbrains.uast.expressions.UReferenceExpression
 import org.jetbrains.uast.psi.PsiElementBacked
@@ -49,12 +51,12 @@ open class KotlinUSimpleReferenceExpression(
         visitor.visitSimpleNameReferenceExpression(this)
 
         // Visit Kotlin get-set synthetic Java property calls as function calls
-        val referenceToAccessor = psi.references.firstOrNull { it is SyntheticPropertyAccessorReference }
-        if (referenceToAccessor is SyntheticPropertyAccessorReference) {
-            val bindingContext = psi.analyze()
-            val accessorDescriptor = referenceToAccessor.resolveToDescriptors(bindingContext).firstOrNull()
-            val resolvedCall = psi.getResolvedCall(bindingContext)
-            val setterValue = if (referenceToAccessor is SyntheticPropertyAccessorReference.Setter) {
+        val bindingContext = psi.analyze()
+        val access = psi.readWriteAccess()
+        val resolvedCall = psi.getResolvedCall(bindingContext)
+        val resultingDescriptor = resolvedCall?.resultingDescriptor as? SyntheticJavaPropertyDescriptor
+        if (resultingDescriptor != null) {
+            val setterValue = if (access.isWrite) {
                 findAssignment(psi, psi.parent)?.right ?: run {
                     visitor.afterVisitSimpleNameReferenceExpression(this)
                     return
@@ -63,8 +65,18 @@ open class KotlinUSimpleReferenceExpression(
                 null
             }
 
-            if (accessorDescriptor is JavaMethodDescriptor && resolvedCall != null) {
-                KotlinAccessorCallExpression(psi, this, resolvedCall, accessorDescriptor, setterValue).accept(visitor)
+            if (resolvedCall != null) {
+                if (access.isRead) {
+                    val getDescriptor = resultingDescriptor.getMethod
+                    KotlinAccessorCallExpression(psi, this, resolvedCall, getDescriptor, null).accept(visitor)
+                }
+
+                if (access.isWrite && setterValue != null) {
+                    val setDescriptor = resultingDescriptor.setMethod
+                    if (setDescriptor != null) {
+                        KotlinAccessorCallExpression(psi, this, resolvedCall, setDescriptor, setterValue).accept(visitor)
+                    }
+                }
             }
         }
 
@@ -136,6 +148,35 @@ open class KotlinUSimpleReferenceExpression(
             val source = accessorDescriptor.toSource()
             return KotlinUFunctionCallExpression.resolveSource(accessorDescriptor, source)
         }
+    }
+
+    enum class ReferenceAccess(val isRead: Boolean, val isWrite: Boolean) {
+        READ(true, false), WRITE(false, true), READ_WRITE(true, true)
+    }
+
+    private fun KtExpression.readWriteAccess(): ReferenceAccess {
+        var expression = getQualifiedExpressionForSelectorOrThis()
+        loop@ while (true) {
+            val parent = expression.parent
+            when (parent) {
+                is KtParenthesizedExpression, is KtAnnotatedExpression, is KtLabeledExpression -> expression = parent as KtExpression
+                else -> break@loop
+            }
+        }
+
+        val assignment = expression.getAssignmentByLHS()
+        if (assignment != null) {
+            when (assignment.operationToken) {
+                KtTokens.EQ -> return ReferenceAccess.WRITE
+                else -> return ReferenceAccess.READ_WRITE
+            }
+        }
+
+        return if ((expression.parent as? KtUnaryExpression)?.operationToken
+                in constant { setOf(KtTokens.PLUSPLUS, KtTokens.MINUSMINUS) })
+            ReferenceAccess.READ_WRITE
+        else
+            ReferenceAccess.READ
     }
 }
 

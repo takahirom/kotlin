@@ -9,4 +9,8 @@ class JavaUVariableDeclarationsExpression(
 ) : UVariableDeclarationsExpression {
     override lateinit var variables: List<UVariable>
         internal set
+
+    constructor(parent: UElement?, variables: List<UVariable>) : this(parent) {
+        this.variables = variables
+    }
 }

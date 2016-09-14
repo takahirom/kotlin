@@ -29,7 +29,7 @@ class KotlinUObjectLiteralExpression(
         override val psi: KtObjectLiteralExpression,
         override val containingElement: UElement?
 ) : KotlinAbstractUExpression(), UObjectLiteralExpression, PsiElementBacked, KotlinUElementWithType {
-    override val declaration by lz { getLanguagePlugin().convert<UClass>(psi.objectDeclaration.toLightClass(), this) }
+    override val declaration by lz { getLanguagePlugin().convert<UClass>(psi.objectDeclaration.toLightClass()!!, this) }
     
     override fun getExpressionType() = psi.objectDeclaration.toPsiType()
 
@@ -68,8 +68,5 @@ class KotlinUObjectLiteralExpression(
         
         override val identifier: String
             get() = psi.name ?: "<error>"
-        
-        override val isUsedAsExpression: Boolean
-            get() = false
     } 
 }

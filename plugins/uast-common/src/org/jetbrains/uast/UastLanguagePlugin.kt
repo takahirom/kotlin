@@ -8,7 +8,7 @@ import com.intellij.psi.*
 
 interface UastLanguagePlugin {
     companion object {
-        val extensionPointName = ExtensionPointName.create<UastLanguagePlugin>("org.jetbrains.uast.UastLanguagePlugin")
+        val extensionPointName = ExtensionPointName.create<UastLanguagePlugin>("org.jetbrains.uast.uastLanguagePlugin")
 
         fun getInstances(project: Project): Collection<UastLanguagePlugin> {
             val projectArea = Extensions.getArea(project)

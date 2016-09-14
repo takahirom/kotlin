@@ -49,10 +49,6 @@ internal inline fun String?.orAnonymous(kind: String = ""): String {
     return this ?: "<anonymous" + (if (kind.isNotBlank()) " $kind" else "") + ">"
 }
 
-internal tailrec fun UElement.getLanguagePlugin(): UastLanguagePlugin {
-    return if (this is UDeclaration) getLanguagePlugin() else containingElement!!.getLanguagePlugin()
-}
-
 internal fun DeclarationDescriptor.toSource() = try {
     DescriptorToSourceUtils.descriptorToDeclaration(this)
 } catch (e: Exception) {

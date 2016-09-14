@@ -1,5 +1,8 @@
 package test.pkg
 
+import android.app.IntentService
+import android.content.Intent
+import java.net.URL
 import javax.net.ssl.HostnameVerifier
 import javax.net.ssl.SSLSession
 
