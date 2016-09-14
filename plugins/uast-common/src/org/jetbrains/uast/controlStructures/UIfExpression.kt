@@ -62,23 +62,23 @@ interface UIfExpression : UExpression {
         visitor.afterVisitIfExpression(this)
     }
 
-    override fun logString() = log("UIfExpression", condition, thenExpression, elseExpression)
+    override fun asLogString() = log("UIfExpression", condition, thenExpression, elseExpression)
 
-    override fun renderString() = buildString {
+    override fun asRenderString() = buildString {
         if (isTernary) {
-            append("(" + condition.renderString() + ")")
+            append("(" + condition.asRenderString() + ")")
             append(" ? ")
-            append("(" + (thenExpression?.renderString() ?: "<noexpr>") + ")")
+            append("(" + (thenExpression?.asRenderString() ?: "<noexpr>") + ")")
             append(" : ")
-            append("(" + (elseExpression?.renderString() ?: "<noexpr>") + ")")
+            append("(" + (elseExpression?.asRenderString() ?: "<noexpr>") + ")")
         } else {
-            append("if (${condition.renderString()}) ")
-            thenExpression?.let { append(it.renderString()) }
+            append("if (${condition.asRenderString()}) ")
+            thenExpression?.let { append(it.asRenderString()) }
             val elseBranch = elseExpression
             if (elseBranch != null && elseBranch !is UastEmptyExpression) {
                 if (thenExpression !is UBlockExpression) append(" ")
                 append("else ")
-                append(elseBranch.renderString())
+                append(elseBranch.asRenderString())
             }
         }
     }

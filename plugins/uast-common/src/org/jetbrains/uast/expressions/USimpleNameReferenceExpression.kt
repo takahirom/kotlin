@@ -32,7 +32,6 @@ interface USimpleNameReferenceExpression : UReferenceExpression {
         visitor.afterVisitSimpleNameReferenceExpression(this)
     }
 
-    override fun logString() = "USimpleReferenceExpression ($identifier)"
-    
-    override fun renderString() = identifier
+    override fun asLogString() = "USimpleReferenceExpression ($identifier)"
+    override fun asRenderString() = identifier
 }

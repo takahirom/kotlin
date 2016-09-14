@@ -25,5 +25,5 @@ interface UClassInitializer : UDeclaration, PsiClassInitializer {
         visitor.afterVisitInitializer(this)
     }
 
-    override fun logString() = "UMethod (name = ${psi.name}"
+    override fun asLogString() = "UMethod (name = ${psi.name}"
 }

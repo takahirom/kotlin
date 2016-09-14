@@ -25,11 +25,11 @@ class JavaUObjectLiteralExpression(
         override val psi: PsiNewExpression,
         override val containingElement: UElement?
 ) : JavaAbstractUExpression(), UObjectLiteralExpression, PsiElementBacked {
-    override val declaration by lz { JavaUClass.create(psi.anonymousClass!!, getLanguagePlugin(), this) }
+    override val declaration by lz { JavaUClass.create(psi.anonymousClass!!, this) }
 
     override val classReference by lz {
         psi.classReference?.let { ref ->
-            JavaClassUSimpleReferenceExpression(ref.element?.text.orAnonymous(), ref, ref.element, this)
+            JavaClassUSimpleNameReferenceExpression(ref.element?.text.orAnonymous(), ref, ref.element, this)
         }
     }
 

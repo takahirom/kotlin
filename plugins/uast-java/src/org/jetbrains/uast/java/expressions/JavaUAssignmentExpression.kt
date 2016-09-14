@@ -29,7 +29,7 @@ class JavaUAssignmentExpression(
     override val rightOperand by lz { JavaConverter.convertOrEmpty(psi.rExpression, this) }
     override val operator by lz { psi.operationTokenType.getOperatorType() }
     
-    override fun resolve() = null
+    override fun resolveOperator() = null
 
     override val operatorIdentifier: UIdentifier
         get() = UIdentifier(psi.operationSign, this)

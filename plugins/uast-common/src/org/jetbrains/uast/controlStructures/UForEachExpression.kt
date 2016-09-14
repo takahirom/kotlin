@@ -45,14 +45,14 @@ interface UForEachExpression : ULoopExpression {
         visitor.afterVisitForEachExpression(this)
     }
 
-    override fun renderString() = buildString {
+    override fun asRenderString() = buildString {
         append("for (")
         append(variable.name)
         append(" : ")
-        append(iteratedValue.renderString())
+        append(iteratedValue.asRenderString())
         append(") ")
-        append(body.renderString())
+        append(body.asRenderString())
     }
 
-    override fun logString() = log("UForEachExpression", variable, iteratedValue, body)
+    override fun asLogString() = log("UForEachExpression", variable, iteratedValue, body)
 }

@@ -40,7 +40,6 @@ interface ULabeledExpression : UExpression {
 
     override fun evaluate() = expression.evaluate()
 
-    override fun logString() = log("ULabeledExpression ($label)", expression)
-
-    override fun renderString() = "$label@ ${expression.renderString()}"
+    override fun asLogString() = log("ULabeledExpression ($label)", expression)
+    override fun asRenderString() = "$label@ ${expression.asRenderString()}"
 }

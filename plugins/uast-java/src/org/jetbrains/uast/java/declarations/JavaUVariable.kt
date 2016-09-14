@@ -20,13 +20,14 @@ import com.intellij.psi.*
 import org.jetbrains.uast.*
 import org.jetbrains.uast.expressions.UReferenceExpression
 import org.jetbrains.uast.expressions.UTypeReferenceExpression
+import org.jetbrains.uast.psi.PsiElementBacked
 
 abstract class AbstractJavaUVariable : PsiVariable, UVariable {
-    override val uastInitializer by lz { languagePlugin.convertOpt<UExpression>(psi.initializer, this) }
-    override val uastAnnotations by lz { psi.annotations.map { SimpleUAnnotation(it, languagePlugin, this) } }
-    override val typeReference by lz { languagePlugin.convertOpt<UTypeReferenceExpression>(psi.typeElement, this) }
+    override val uastInitializer by lz { getLanguagePlugin().convertOpt<UExpression>(psi.initializer, this) }
+    override val uastAnnotations by lz { psi.annotations.map { SimpleUAnnotation(it, this) } }
+    override val typeReference by lz { getLanguagePlugin().convertOpt<UTypeReferenceExpression>(psi.typeElement, this) }
 
-    override val uastNameIdentifier: UElement
+    override val uastAnchor: UElement
         get() = UIdentifier(psi.nameIdentifier, this)
 
     override fun equals(other: Any?) = this === other
@@ -35,19 +36,18 @@ abstract class AbstractJavaUVariable : PsiVariable, UVariable {
 
 open class JavaUVariable(
         psi: PsiVariable,
-        override val languagePlugin: UastLanguagePlugin,
         override val containingElement: UElement?
 ) : AbstractJavaUVariable(), UVariable, PsiVariable by psi {
-    override val psi = unwrap(psi)
+    override val psi = unwrap<UVariable, PsiVariable>(psi)
     
     companion object {
-        fun create(psi: PsiVariable, languagePlugin: UastLanguagePlugin, containingElement: UElement?): UVariable {
+        fun create(psi: PsiVariable, containingElement: UElement?): UVariable {
             return when (psi) {
-                is PsiEnumConstant -> JavaUEnumConstant(psi, languagePlugin, containingElement)
-                is PsiLocalVariable -> JavaULocalVariable(psi, languagePlugin, containingElement)
-                is PsiParameter -> JavaUParameter(psi, languagePlugin, containingElement)
-                is PsiField -> JavaUField(psi, languagePlugin, containingElement)
-                else -> JavaUVariable(psi, languagePlugin, containingElement)
+                is PsiEnumConstant -> JavaUEnumConstant(psi, containingElement)
+                is PsiLocalVariable -> JavaULocalVariable(psi, containingElement)
+                is PsiParameter -> JavaUParameter(psi, containingElement)
+                is PsiField -> JavaUField(psi, containingElement)
+                else -> JavaUVariable(psi, containingElement)
             }
         }
     }
@@ -55,48 +55,41 @@ open class JavaUVariable(
 
 open class JavaUParameter(
         psi: PsiParameter,
-        override val languagePlugin: UastLanguagePlugin,
         override val containingElement: UElement?
-) : AbstractJavaUVariable(), org.jetbrains.uast.UParameter, PsiParameter by psi {
-    override val psi = unwrap(psi) as PsiParameter
+) : AbstractJavaUVariable(), UParameter, PsiParameter by psi {
+    override val psi = unwrap<UParameter, PsiParameter>(psi)
 }
 
 open class JavaUField(
         psi: PsiField,
-        override val languagePlugin: UastLanguagePlugin,
         override val containingElement: UElement?
-) : AbstractJavaUVariable(), org.jetbrains.uast.UField, PsiField by psi {
-    override val psi = unwrap(psi) as PsiField
+) : AbstractJavaUVariable(), UField, PsiField by psi {
+    override val psi = unwrap<UField, PsiField>(psi)
 }
 
 open class JavaULocalVariable(
         psi: PsiLocalVariable,
-        override val languagePlugin: UastLanguagePlugin,
         override val containingElement: UElement?
-) : AbstractJavaUVariable(), org.jetbrains.uast.ULocalVariable, PsiLocalVariable by psi {
-    override val psi = unwrap(psi) as PsiLocalVariable
+) : AbstractJavaUVariable(), ULocalVariable, PsiLocalVariable by psi {
+    override val psi = unwrap<ULocalVariable, PsiLocalVariable>(psi)
 }
 
 open class JavaUEnumConstant(
         psi: PsiEnumConstant,
-        override val languagePlugin: UastLanguagePlugin,
         override val containingElement: UElement?
-) : AbstractJavaUVariable(), org.jetbrains.uast.UEnumConstant, PsiEnumConstant by psi {
-    override val psi = unwrap(psi) as PsiEnumConstant
+) : AbstractJavaUVariable(), UEnumConstant, PsiEnumConstant by psi {
+    override val psi = unwrap<UEnumConstant, PsiEnumConstant>(psi)
 
-    override val isUsedAsExpression: Boolean
-        get() = true
-    
-    override val kind: org.jetbrains.uast.UastCallKind
-        get() = org.jetbrains.uast.UastCallKind.CONSTRUCTOR_CALL
-    override val receiver: org.jetbrains.uast.UExpression?
+    override val kind: UastCallKind
+        get() = UastCallKind.CONSTRUCTOR_CALL
+    override val receiver: UExpression?
         get() = null
     override val receiverType: PsiType?
         get() = null
     override val methodIdentifier: UIdentifier?
         get() = null
     override val classReference: UReferenceExpression?
-        get() = null
+        get() = JavaEnumConstantClassReference(psi, containingElement)
     override val typeArgumentCount: Int
         get() = 0
     override val typeArguments: List<PsiType>
@@ -105,7 +98,7 @@ open class JavaUEnumConstant(
         get() = psi.argumentList?.expressions?.size ?: 0
 
     override val valueArguments by lz {
-        psi.argumentList?.expressions?.map { languagePlugin.convertOpt(it, this) ?: UastEmptyExpression } ?: emptyList()
+        psi.argumentList?.expressions?.map { getLanguagePlugin().convertOpt(it, this) ?: UastEmptyExpression } ?: emptyList()
     }
 
     override val returnType: PsiType?
@@ -115,7 +108,15 @@ open class JavaUEnumConstant(
 
     override val methodName: String?
         get() = null
-}
 
-@Suppress("UNCHECKED_CAST")
-private tailrec fun <T : PsiVariable> unwrap(psi: T): PsiVariable = if (psi is UVariable) unwrap(psi.psi) else psi
+    private class JavaEnumConstantClassReference(
+            override val psi: PsiEnumConstant,
+            override val containingElement: UElement?
+    ) : JavaAbstractUExpression(), USimpleNameReferenceExpression, PsiElementBacked {
+        override fun resolve() = psi.containingClass
+        override val resolvedName: String?
+            get() = psi.containingClass?.name
+        override val identifier: String
+            get() = psi.containingClass?.name ?: "<error>"
+    }
+}

@@ -31,7 +31,7 @@ interface UMethod : UDeclaration, PsiMethod {
         visitor.afterVisitMethod(this)
     }
 
-    override fun logString() = "UMethod (name = $name)"
+    override fun asLogString() = "UMethod (name = $name)"
 }
 
 interface UAnnotationMethod : UMethod, PsiAnnotationMethod {
@@ -52,5 +52,5 @@ interface UAnnotationMethod : UMethod, PsiAnnotationMethod {
         visitor.afterVisitMethod(this)
     }
 
-    override fun logString() = "UAnnotationMethod (name = $name)"
+    override fun asLogString() = "UAnnotationMethod (name = $name)"
 }

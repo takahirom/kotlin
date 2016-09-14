@@ -24,17 +24,14 @@ class UNamedExpression(
 ): UExpression, UNamed {
     lateinit var expression: UExpression
 
-    override val isUsedAsExpression: Boolean
-        get() = expression.isUsedAsExpression
-
     override fun accept(visitor: UastVisitor) {
         if (visitor.visitElement(this)) return
         expression.accept(visitor)
         visitor.afterVisitElement(this)
     }
 
-    override fun logString() = log("UNamedExpression ($name)", expression)
-    override fun renderString() = name + " = " + expression.renderString()
+    override fun asLogString() = log("UNamedExpression ($name)", expression)
+    override fun asRenderString() = name + " = " + expression.asRenderString()
 
     override fun evaluate() = expression.evaluate()
     

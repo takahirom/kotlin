@@ -35,5 +35,5 @@ class KotlinStringTemplateUBinaryExpression(
     override val operatorIdentifier: UIdentifier?
         get() = null
 
-    override fun resolve() = null
+    override fun resolveOperator() = null
 }

@@ -19,7 +19,7 @@ import com.intellij.psi.PsiMethod
 import org.jetbrains.uast.internal.log
 import org.jetbrains.uast.visitor.UastVisitor
 
-interface UUnaryExpression : UExpression, UResolvable {
+interface UUnaryExpression : UExpression {
     /**
      * Returns the expression operand.
      */
@@ -40,7 +40,7 @@ interface UUnaryExpression : UExpression, UResolvable {
      *
      * @return the resolved method, or null if the method can't be resolved, or if the expression is not a method call.
      */
-    override fun resolve(): PsiMethod?
+    fun resolveOperator(): PsiMethod?
 
     override fun accept(visitor: UastVisitor) {
         if (visitor.visitUnaryExpression(this)) return
@@ -58,8 +58,8 @@ interface UPrefixExpression : UUnaryExpression {
         visitor.afterVisitPrefixExpression(this)
     }
 
-    override fun logString() = log("UPrefixExpression (${operator.text})", operand)
-    override fun renderString() = operator.text + operand.renderString()
+    override fun asLogString() = log("UPrefixExpression (${operator.text})", operand)
+    override fun asRenderString() = operator.text + operand.asRenderString()
 }
 
 interface UPostfixExpression : UUnaryExpression {
@@ -71,6 +71,6 @@ interface UPostfixExpression : UUnaryExpression {
         visitor.afterVisitPostfixExpression(this)
     }
 
-    override fun logString() = log("UPostfixExpression (${operator.text})", operand)
-    override fun renderString() = operand.renderString() + operator.text
+    override fun asLogString() = log("UPostfixExpression (${operator.text})", operand)
+    override fun asRenderString() = operand.asRenderString() + operator.text
 }

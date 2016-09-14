@@ -76,14 +76,14 @@ interface UTryExpression : UExpression {
         visitor.afterVisitTryExpression(this)
     }
 
-    override fun renderString() = buildString {
+    override fun asRenderString() = buildString {
         append("try ")
-        appendln(tryClause.renderString().trim('\n', '\r'))
-        catchClauses.forEach { appendln(it.renderString().trim('\n', '\r')) }
-        finallyClause?.let { append("finally ").append(it.renderString().trim('\n', '\r')) }
+        appendln(tryClause.asRenderString().trim('\n', '\r'))
+        catchClauses.forEach { appendln(it.asRenderString().trim('\n', '\r')) }
+        finallyClause?.let { append("finally ").append(it.asRenderString().trim('\n', '\r')) }
     }
 
-    override fun logString() = log("UTryExpression", tryClause, catchClauses, finallyClause)
+    override fun asLogString() = log("UTryExpression", tryClause, catchClauses, finallyClause)
 }
 
 /**
@@ -117,6 +117,6 @@ interface UCatchClause : UElement {
         visitor.afterVisitCatchClause(this)
     }
 
-    override fun logString() = log("UCatchClause", body)
-    override fun renderString() = "catch (e) " + body.renderString()
+    override fun asLogString() = log("UCatchClause", body)
+    override fun asRenderString() = "catch (e) " + body.asRenderString()
 }

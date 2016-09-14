@@ -23,9 +23,11 @@ import org.jetbrains.uast.*
 import org.jetbrains.uast.expressions.UReferenceExpression
 import org.jetbrains.uast.expressions.UTypeReferenceExpression
 import org.jetbrains.uast.java.AbstractJavaUVariable
+import org.jetbrains.uast.java.JavaAbstractUExpression
 import org.jetbrains.uast.java.annotations
 import org.jetbrains.uast.kotlin.psi.UastKotlinPsiParameter
 import org.jetbrains.uast.kotlin.psi.UastKotlinPsiVariable
+import org.jetbrains.uast.psi.PsiElementBacked
 
 abstract class AbstractKotlinUVariable : AbstractJavaUVariable() {
     override val uastInitializer: UExpression?
@@ -37,28 +39,27 @@ abstract class AbstractKotlinUVariable : AbstractJavaUVariable() {
                 is KtLightElement<*, *> -> (psi.kotlinOrigin as? KtVariableDeclaration)?.initializer
                 else -> null
             } ?: return null
-            return languagePlugin.convertOpt(initializerExpression, this) ?: UastEmptyExpression
+            return getLanguagePlugin().convertOpt(initializerExpression, this) ?: UastEmptyExpression
         }
 }
 
 class KotlinUVariable(
         psi: PsiVariable,
-        override val languagePlugin: UastLanguagePlugin,
         override val containingElement: UElement?
 ) : AbstractKotlinUVariable(), UVariable, PsiVariable by psi {
-    override val psi = unwrap(psi)
+    override val psi = unwrap<UVariable, PsiVariable>(psi)
 
-    override val uastAnnotations by lz { psi.annotations.map { SimpleUAnnotation(it, languagePlugin, this) } }
-    override val typeReference by lz { languagePlugin.convertOpt<UTypeReferenceExpression>(psi.typeElement, this) }
-    
+    override val uastAnnotations by lz { psi.annotations.map { SimpleUAnnotation(it, this) } }
+    override val typeReference by lz { getLanguagePlugin().convertOpt<UTypeReferenceExpression>(psi.typeElement, this) }
+
     companion object {
-        fun create(psi: PsiVariable, languagePlugin: UastLanguagePlugin, containingElement: UElement?): UVariable {
+        fun create(psi: PsiVariable, containingElement: UElement?): UVariable {
             return when (psi) {
-                is PsiEnumConstant -> KotlinUEnumConstant(psi, languagePlugin, containingElement)
-                is PsiLocalVariable -> KotlinULocalVariable(psi, languagePlugin, containingElement)
-                is PsiParameter -> KotlinUParameter(psi, languagePlugin, containingElement)
-                is PsiField -> KotlinUField(psi, languagePlugin, containingElement)
-                else -> KotlinUVariable(psi, languagePlugin, containingElement)
+                is PsiEnumConstant -> KotlinUEnumConstant(psi, containingElement)
+                is PsiLocalVariable -> KotlinULocalVariable(psi, containingElement)
+                is PsiParameter -> KotlinUParameter(psi, containingElement)
+                is PsiField -> KotlinUField(psi, containingElement)
+                else -> KotlinUVariable(psi, containingElement)
             }
         }
     }
@@ -66,48 +67,41 @@ class KotlinUVariable(
 
 open class KotlinUParameter(
         psi: PsiParameter,
-        override val languagePlugin: UastLanguagePlugin,
         override val containingElement: UElement?
 ) : AbstractKotlinUVariable(), UParameter, PsiParameter by psi {
-    override val psi = unwrap(psi) as PsiParameter
+    override val psi = unwrap<UParameter, PsiParameter>(psi)
 }
 
 open class KotlinUField(
         psi: PsiField,
-        override val languagePlugin: UastLanguagePlugin,
         override val containingElement: UElement?
 ) : AbstractKotlinUVariable(), UField, PsiField by psi {
-    override val psi = unwrap(psi) as PsiField
+    override val psi = unwrap<UField, PsiField>(psi)
 }
 
 open class KotlinULocalVariable(
         psi: PsiLocalVariable,
-        override val languagePlugin: UastLanguagePlugin,
         override val containingElement: UElement?
 ) : AbstractKotlinUVariable(), ULocalVariable, PsiLocalVariable by psi {
-    override val psi = unwrap(psi) as PsiLocalVariable
+    override val psi = unwrap<ULocalVariable, PsiLocalVariable>(psi)
 }
 
 open class KotlinUEnumConstant(
         psi: PsiEnumConstant,
-        override val languagePlugin: UastLanguagePlugin,
         override val containingElement: UElement?
 ) : AbstractKotlinUVariable(), UEnumConstant, PsiEnumConstant by psi {
-    override val psi = unwrap(psi) as PsiEnumConstant
+    override val psi = unwrap<UEnumConstant, PsiEnumConstant>(psi)
 
-    override val isUsedAsExpression: Boolean
-        get() = true
-
-    override val kind: org.jetbrains.uast.UastCallKind
-        get() = org.jetbrains.uast.UastCallKind.CONSTRUCTOR_CALL
-    override val receiver: org.jetbrains.uast.UExpression?
+    override val kind: UastCallKind
+        get() = UastCallKind.CONSTRUCTOR_CALL
+    override val receiver: UExpression?
         get() = null
     override val receiverType: PsiType?
         get() = null
     override val methodIdentifier: UIdentifier?
         get() = null
     override val classReference: UReferenceExpression?
-        get() = null
+        get() = KotlinEnumConstantClassReference(psi, this)
     override val typeArgumentCount: Int
         get() = 0
     override val typeArguments: List<PsiType>
@@ -116,7 +110,7 @@ open class KotlinUEnumConstant(
         get() = psi.argumentList?.expressions?.size ?: 0
 
     override val valueArguments by lz {
-        psi.argumentList?.expressions?.map { languagePlugin.convertOpt(it, this) ?: UastEmptyExpression } ?: emptyList()
+        psi.argumentList?.expressions?.map { getLanguagePlugin().convertOpt(it, this) ?: UastEmptyExpression } ?: emptyList()
     }
 
     override val returnType: PsiType?
@@ -126,7 +120,15 @@ open class KotlinUEnumConstant(
 
     override val methodName: String?
         get() = null
-}
 
-@Suppress("UNCHECKED_CAST")
-private tailrec fun <T : PsiVariable> unwrap(psi: T): PsiVariable = if (psi is UVariable) unwrap(psi.psi) else psi
+    private class KotlinEnumConstantClassReference(
+            override val psi: PsiEnumConstant,
+            override val containingElement: UElement?
+    ) : JavaAbstractUExpression(), USimpleNameReferenceExpression, PsiElementBacked {
+        override fun resolve() = psi.containingClass
+        override val resolvedName: String?
+            get() = psi.containingClass?.name
+        override val identifier: String
+            get() = psi.containingClass?.name ?: "<error>"
+    }
+}

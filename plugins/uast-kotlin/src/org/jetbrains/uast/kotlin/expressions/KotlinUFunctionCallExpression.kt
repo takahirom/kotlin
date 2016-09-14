@@ -41,8 +41,8 @@ class KotlinUFunctionCallExpression(
     companion object {
         fun resolveSource(descriptor: DeclarationDescriptor, source: PsiElement?): PsiMethod? {
             if (descriptor is ConstructorDescriptor && descriptor.isPrimary
-                && source is KtClassOrObject && source.getPrimaryConstructor() == null
-                && source.getSecondaryConstructors().isEmpty()) {
+                    && source is KtClassOrObject && source.getPrimaryConstructor() == null
+                    && source.getSecondaryConstructors().isEmpty()) {
                 return source.toLightClass()?.constructors?.firstOrNull()
             }
 
@@ -53,14 +53,14 @@ class KotlinUFunctionCallExpression(
             }
         }
     }
-    
+
     private val resolvedCall by lz {
-        _resolvedCall ?: psi.getResolvedCall(psi.analyze()) 
+        _resolvedCall ?: psi.getResolvedCall(psi.analyze())
     }
-    
+
     override val receiverType by lz {
         val resolvedCall = this.resolvedCall ?: return@lz null
-        val receiver = resolvedCall.extensionReceiver ?: resolvedCall.dispatchReceiver ?: return@lz null
+        val receiver = resolvedCall.dispatchReceiver ?: resolvedCall.extensionReceiver ?: return@lz null
         receiver.type.toPsiType(this, psi, boxed = true)
     }
 
@@ -114,7 +114,7 @@ class KotlinUFunctionCallExpression(
         methodIdentifier?.accept(visitor)
         classReference.accept(visitor)
         valueArguments.acceptList(visitor)
-        
+
         visitor.afterVisitCallExpression(this)
     }
 }

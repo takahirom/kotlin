@@ -116,7 +116,7 @@ public class CutPasteDetector extends Detector implements Detector.UastScanner {
         }
         
         String callOperand = call.getReceiver() != null
-                ? call.getReceiver().originalString() : "";
+                             ? call.getReceiver().asSourceString() : "";
 
         List<UExpression> arguments = call.getValueArguments();
         if (arguments.isEmpty()) {
@@ -151,7 +151,7 @@ public class CutPasteDetector extends Detector implements Detector.UastScanner {
                         context.report(ISSUE, call, location, String.format(
                                 "The id `%1$s` has already been looked up in this method; possible "
                                         +
-                                        "cut & paste error?", first.originalString()));
+                                        "cut & paste error?", first.asSourceString()));
                     } else {
                         mIds.put(id, call);
                         mLhs.put(id, lhs);
@@ -176,19 +176,19 @@ public class CutPasteDetector extends Detector implements Detector.UastScanner {
             UBinaryExpression be = (UBinaryExpression) parent;
             UExpression left = be.getLeftOperand();
             if (left instanceof UReferenceExpression) {
-                return left.renderString();
+                return left.asRenderString();
             } else if (left instanceof UArrayAccessExpression) {
                 UArrayAccessExpression aa = (UArrayAccessExpression) left;
-                return aa.getReceiver().originalString();
+                return aa.getReceiver().asSourceString();
             }
         } else if (UastExpressionUtils.isAssignment(parent)) {
             //noinspection ConstantConditions
             UExpression left = ((UBinaryExpression) parent).getLeftOperand();
             if (left instanceof UReferenceExpression) {
-                return left.originalString();
+                return left.asSourceString();
             } else if (left instanceof UArrayAccessExpression) {
                 UArrayAccessExpression aa = (UArrayAccessExpression) left;
-                return aa.getReceiver().originalString();
+                return aa.getReceiver().asSourceString();
             }
         }
 

@@ -103,10 +103,10 @@ interface UCallExpression : UExpression, UResolvable {
         visitor.afterVisitCallExpression(this)
     }
 
-    override fun logString() = log("UCallExpression ($kind, argCount = $valueArgumentCount)", methodIdentifier, valueArguments)
+    override fun asLogString() = log("UCallExpression ($kind, argCount = $valueArgumentCount)", methodIdentifier, valueArguments)
     
-    override fun renderString(): String {
-        val ref = classReference?.renderString() ?: methodName ?: methodIdentifier?.renderString() ?: "<noref>"
-        return ref + "(" + valueArguments.joinToString { it.renderString() } + ")"
+    override fun asRenderString(): String {
+        val ref = classReference?.asRenderString() ?: methodName ?: methodIdentifier?.asRenderString() ?: "<noref>"
+        return ref + "(" + valueArguments.joinToString { it.asRenderString() } + ")"
     }
 }

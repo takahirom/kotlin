@@ -46,10 +46,11 @@ interface UCallableReferenceExpression : UExpression {
         visitor.afterVisitCallableReferenceExpression(this)
     }
 
-    override fun logString() = "UCallableReferenceExpression"
-    override fun renderString() = buildString {
+    override fun asLogString() = "UCallableReferenceExpression"
+
+    override fun asRenderString() = buildString {
         qualifierExpression?.let {
-            append(it.renderString())
+            append(it.asRenderString())
         } ?: qualifierType?.let {
             append(it.name)
         }

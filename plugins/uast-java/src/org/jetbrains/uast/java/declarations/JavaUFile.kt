@@ -11,7 +11,7 @@ class JavaUFile(override val psi: PsiJavaFile, override val languagePlugin: Uast
     override val imports by lz {
         psi.importList?.allImportStatements?.map { JavaUImportStatement(it, this) } ?: listOf() 
     }
-    override val classes by lz { psi.classes.map { JavaUClass.create(it, languagePlugin, this) } }
+    override val classes by lz { psi.classes.map { JavaUClass.create(it, this) } }
 
     override fun equals(other: Any?) = (other as? JavaUFile)?.psi == psi
 }

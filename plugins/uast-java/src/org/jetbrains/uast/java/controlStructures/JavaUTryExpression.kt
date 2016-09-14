@@ -42,8 +42,7 @@ class JavaUCatchClause(
     override val body by lz { JavaConverter.convertOrEmpty(psi.catchBlock, this) }
     
     override val parameters by lz {
-        val languagePlugin = getLanguagePlugin()
-        (psi.parameter?.let { listOf(it) } ?: emptyList()).map { JavaUParameter(it, languagePlugin, this) }
+        (psi.parameter?.let { listOf(it) } ?: emptyList()).map { JavaUParameter(it, this) }
     }
 
     override val typeReferences by lz {

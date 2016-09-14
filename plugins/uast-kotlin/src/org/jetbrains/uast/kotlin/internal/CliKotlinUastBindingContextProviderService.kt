@@ -20,7 +20,7 @@ class CliKotlinUastBindingContextProviderService : KotlinUastBindingContextProvi
         get() = getExtensions(AnalysisCompletedHandlerExtension.extensionPointName)
                 .filterIsInstance<UastAnalysisCompletedHandlerExtension>()
                 .firstOrNull()
-    
+
     override fun getBindingContext(element: KtElement): BindingContext {
         return element.project.analysisCompletedHandler?.getBindingContext() ?: BindingContext.EMPTY
     }
@@ -33,23 +33,23 @@ class CliKotlinUastBindingContextProviderService : KotlinUastBindingContextProvi
 class UastAnalysisCompletedHandlerExtension : AnalysisCompletedHandlerExtension {
     private var context: BindingContext? = null
     private var typeMapper: KotlinTypeMapper? = null
-    
+
     fun getBindingContext() = context
-    
+
     fun getTypeMapper(): KotlinTypeMapper? {
         if (typeMapper != null) return typeMapper
         val bindingContext = context ?: return null
-        
-        val typeMapper = KotlinTypeMapper(bindingContext, ClassBuilderMode.LIGHT_CLASSES, NoResolveFileClassesProvider, 
+
+        val typeMapper = KotlinTypeMapper(bindingContext, ClassBuilderMode.LIGHT_CLASSES, NoResolveFileClassesProvider,
                 null, IncompatibleClassTracker.DoNothing, JvmAbi.DEFAULT_MODULE_NAME)
         this.typeMapper = typeMapper
         return typeMapper
     }
-    
+
     override fun analysisCompleted(
-            project: Project, 
-            module: ModuleDescriptor, 
-            bindingTrace: BindingTrace, 
+            project: Project,
+            module: ModuleDescriptor,
+            bindingTrace: BindingTrace,
             files: Collection<KtFile>
     ): AnalysisResult? {
         context = bindingTrace.bindingContext

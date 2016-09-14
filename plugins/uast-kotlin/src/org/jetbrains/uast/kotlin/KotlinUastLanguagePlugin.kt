@@ -16,6 +16,8 @@
 
 package org.jetbrains.uast.kotlin
 
+import com.intellij.lang.Language
+import com.intellij.openapi.project.Project
 import com.intellij.psi.*
 import com.intellij.psi.impl.source.tree.LeafPsiElement
 import org.jetbrains.kotlin.asJava.LightClassUtil
@@ -28,6 +30,7 @@ import org.jetbrains.kotlin.asJava.toLightClass
 import org.jetbrains.kotlin.codegen.state.KotlinTypeMapper
 import org.jetbrains.kotlin.descriptors.ConstructorDescriptor
 import org.jetbrains.kotlin.descriptors.FunctionDescriptor
+import org.jetbrains.kotlin.idea.KotlinLanguage
 import org.jetbrains.kotlin.lexer.KtTokens
 import org.jetbrains.kotlin.psi.*
 import org.jetbrains.kotlin.resolve.BindingContext
@@ -47,20 +50,24 @@ interface KotlinUastBindingContextProviderService {
     fun getTypeMapper(element: KtElement): KotlinTypeMapper?
 }
 
-class KotlinUastLanguagePlugin : UastLanguagePlugin() {
+class KotlinUastLanguagePlugin(val project: Project) : UastLanguagePlugin {
     override val priority = 10
-    private val javaPlugin by lz { context.plugins.first { it is JavaUastLanguagePlugin } }
+
+    private val javaPlugin by lz { UastLanguagePlugin.getInstances(project).first { it is JavaUastLanguagePlugin } }
+
+    override val language: Language
+        get() = KotlinLanguage.INSTANCE
 
     override fun isFileSupported(fileName: String): Boolean {
         return fileName.endsWith(".kt", false) || fileName.endsWith(".kts", false)
     }
 
-    override fun convertElement(element: Any?, parent: UElement?, requiredType: Class<out UElement>?): UElement? {
+    override fun convertElement(element: PsiElement, parent: UElement?, requiredType: Class<out UElement>?): UElement? {
         if (element !is PsiElement) return null
         return convertDeclaration(element, parent, requiredType) ?: KotlinConverter.convertPsiElement(element, parent, requiredType)
     }
     
-    override fun convertElementWithParent(element: Any?, requiredType: Class<out UElement>?): UElement? {
+    override fun convertElementWithParent(element: PsiElement, requiredType: Class<out UElement>?): UElement? {
         if (element !is PsiElement) return null
         if (element is PsiFile) return convertDeclaration(element, null, requiredType)
 
@@ -70,57 +77,61 @@ class KotlinUastLanguagePlugin : UastLanguagePlugin() {
     }
 
     override fun getMethodCallExpression(
-            e: PsiElement, 
-            containingClassFqName: String?, 
+            element: PsiElement,
+            containingClassFqName: String?,
             methodName: String
-    ): Pair<UCallExpression, PsiMethod>? {
-        if (e !is KtCallExpression) return null
-        val resolvedCall = e.getResolvedCall(e.analyze()) ?: return null
+    ): UastLanguagePlugin.ResolvedMethod? {
+        if (element !is KtCallExpression) return null
+        val resolvedCall = element.getResolvedCall(element.analyze()) ?: return null
         val resultingDescriptor = resolvedCall.resultingDescriptor
         if (resultingDescriptor !is FunctionDescriptor || resultingDescriptor.name.asString() != methodName) return null
         
-        val parent = e.parent ?: return null
+        val parent = element.parent ?: return null
         val parentUElement = convertElementWithParent(parent, null) ?: return null
 
-        val uExpression = KotlinUFunctionCallExpression(e, parentUElement, resolvedCall)
+        val uExpression = KotlinUFunctionCallExpression(element, parentUElement, resolvedCall)
         val method = uExpression.resolve() ?: return null
         if (method.name != methodName) return null
-        return Pair(uExpression, method)
+        return UastLanguagePlugin.ResolvedMethod(uExpression, method)
     }
 
     override fun getConstructorCallExpression(
-            e: PsiElement, 
+            element: PsiElement,
             fqName: String
-    ): Triple<UCallExpression, PsiMethod, PsiClass>? {
-        if (e !is KtCallExpression) return null
-        val resolvedCall = e.getResolvedCall(e.analyze()) ?: return null
+    ): UastLanguagePlugin.ResolvedConstructor? {
+        if (element !is KtCallExpression) return null
+        val resolvedCall = element.getResolvedCall(element.analyze()) ?: return null
         val resultingDescriptor = resolvedCall.resultingDescriptor
         if (resultingDescriptor !is ConstructorDescriptor 
                 || resultingDescriptor.returnType.constructor.declarationDescriptor?.name?.asString() != fqName) {
             return null
         }
 
-        val parent = e.parent ?: return null
+        val parent = element.parent ?: return null
         val parentUElement = convertElementWithParent(parent, null) ?: return null
 
-        val uExpression = KotlinUFunctionCallExpression(e, parentUElement, resolvedCall)
+        val uExpression = KotlinUFunctionCallExpression(element, parentUElement, resolvedCall)
         val method = uExpression.resolve() ?: return null
         val containingClass = method.containingClass ?: return null
-        return Triple(uExpression, method, containingClass)
+        return UastLanguagePlugin.ResolvedConstructor(uExpression, method, containingClass)
     }
 
     private fun convertDeclaration(element: PsiElement, parent: UElement?, requiredType: Class<out UElement>?): UElement? {
         if (element is UElement) return element
+
+        if (element.isValid) element.getUserData(KOTLIN_CACHED_UELEMENT_KEY)?.let { ref ->
+            ref.get()?.let { return it }
+        }
         
         val original = element.originalElement
         return when (original) {
-            is KtLightMethod -> KotlinUMethod.create(original, this, parent)
-            is KtLightClass -> KotlinUClass.create(original, this, parent)
+            is KtLightMethod -> KotlinUMethod.create(original, parent)
+            is KtLightClass -> KotlinUClass.create(original, parent)
             is KtLightField, is KtLightParameter, is UastKotlinPsiParameter, is UastKotlinPsiVariable -> {
-                KotlinUVariable.create(original as PsiVariable, this, parent)
+                KotlinUVariable.create(original as PsiVariable, parent)
             }
 
-            is KtClassOrObject -> original.toLightClass()?.let { lightClass -> KotlinUClass.create(lightClass, this, parent) }
+            is KtClassOrObject -> original.toLightClass()?.let { lightClass -> KotlinUClass.create(lightClass, parent) }
             is KtFunction -> {
                 val lightMethod = LightClassUtil.getLightClassMethod(original) ?: return null
                 convertDeclaration(lightMethod, parent, requiredType)
@@ -135,6 +146,17 @@ class KotlinUastLanguagePlugin : UastLanguagePlugin() {
             is FakeFileForLightClass -> KotlinUFile(original.navigationElement, this)
             
             else -> null
+        }
+    }
+
+    override fun isExpressionValueUsed(element: UExpression): Boolean {
+        return when (element) {
+            is KotlinUSimpleReferenceExpression.KotlinAccessorCallExpression -> element.setterValue != null
+            is KotlinAbstractUExpression -> {
+                val ktElement = ((element as? PsiElementBacked)?.psi as? KtElement) ?: return false
+                ktElement.analyze()[BindingContext.USED_AS_EXPRESSION, ktElement] ?: false
+            }
+            else -> false
         }
     }
 }
@@ -152,9 +174,8 @@ internal object KotlinConverter {
         return with (requiredType) { when (element) {
             is KtParameterList -> el<UVariableDeclarationsExpression> {
                 KotlinUVariableDeclarationsExpression(parent).apply {
-                    val languagePlugin = parent!!.getLanguagePlugin()
                     variables = element.parameters.mapIndexed { i, p ->
-                        KotlinUVariable.create(UastKotlinPsiParameter.create(p, element, parent, i), languagePlugin, this)
+                        KotlinUVariable.create(UastKotlinPsiParameter.create(p, element, parent!!, i), this)
                     }
                 }
             }
@@ -177,9 +198,8 @@ internal object KotlinConverter {
             psi: KtVariableDeclaration, 
             parent: UElement?
     ): UVariableDeclarationsExpression {
-        val languagePlugin = parent!!.getLanguagePlugin()
         val parentPsiElement = (parent as? PsiElementBacked)?.psi
-        val variable = KotlinUVariable.create(UastKotlinPsiVariable.create(psi, parentPsiElement, parent), languagePlugin, parent)
+        val variable = KotlinUVariable.create(UastKotlinPsiVariable.create(psi, parentPsiElement, parent!!), parent)
         return KotlinUVariableDeclarationsExpression(parent).apply { variables = listOf(variable) }
     }
     
@@ -219,13 +239,12 @@ internal object KotlinConverter {
             }
             is KtDestructuringDeclaration -> expr<UVariableDeclarationsExpression> {
                 KotlinUVariableDeclarationsExpression(parent).apply {
-                    val languagePlugin = parent!!.getLanguagePlugin()
-                    val tempAssignment = KotlinUVariable.create(UastKotlinPsiVariable.create(expression, parent), languagePlugin, parent)
+                    val tempAssignment = KotlinUVariable.create(UastKotlinPsiVariable.create(expression, parent!!), parent)
                     val destructuringAssignments = expression.entries.mapIndexed { i, entry ->
                         val psiFactory = KtPsiFactory(expression.project)
                         val initializer = psiFactory.createExpression("${tempAssignment.name}.component${i + 1}()")
                         KotlinUVariable.create(UastKotlinPsiVariable.create(
-                                entry, tempAssignment.psi, parent, initializer), languagePlugin, parent)
+                                entry, tempAssignment.psi, parent, initializer), parent)
                     }
                     variables = listOf(tempAssignment) + destructuringAssignments
                 }

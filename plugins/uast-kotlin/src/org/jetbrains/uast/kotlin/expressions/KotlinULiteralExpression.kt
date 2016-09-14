@@ -18,6 +18,7 @@ package org.jetbrains.uast.kotlin
 
 import com.intellij.openapi.util.text.StringUtil
 import com.intellij.psi.PsiElement
+import org.jetbrains.kotlin.KtNodeTypes
 import org.jetbrains.kotlin.psi.KtConstantExpression
 import org.jetbrains.uast.UElement
 import org.jetbrains.uast.ULiteralExpression
@@ -28,8 +29,8 @@ class KotlinULiteralExpression(
         override val containingElement: UElement?
 ) : KotlinAbstractUExpression(), ULiteralExpression, PsiElementBacked, KotlinUElementWithType, KotlinEvaluatableUElement {
     override val isNull: Boolean
-        get() = psi.isNullExpression()
-    
+        get() = psi.unwrapBlockOrParenthesis().node?.elementType == KtNodeTypes.NULL
+
     override val value by lz { evaluate() }
 }
 

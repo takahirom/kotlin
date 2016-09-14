@@ -23,30 +23,27 @@ import org.jetbrains.uast.*
 
 open class JavaUMethod(
         psi: PsiMethod,
-        override val languagePlugin: UastLanguagePlugin,
         override val containingElement: UElement?
 ) : UMethod, PsiMethod by psi {
-    override val psi = unwrap(psi)
+    override val psi = unwrap<UMethod, PsiMethod>(psi)
     
-    override val uastBody by lz { languagePlugin.convertOpt<UExpression>(psi.body, this) }
-    override val uastAnnotations by lz { psi.annotations.map { SimpleUAnnotation(it, languagePlugin, this) } }
+    override val uastBody by lz { getLanguagePlugin().convertOpt<UExpression>(psi.body, this) }
+    override val uastAnnotations by lz { psi.annotations.map { SimpleUAnnotation(it, this) } }
     
     override val uastParameters by lz {
-        psi.parameterList.parameters.map { JavaUParameter(it, languagePlugin, this) } 
+        psi.parameterList.parameters.map { JavaUParameter(it, this) }
     }
 
-    override val uastNameIdentifier: UElement
+    override val uastAnchor: UElement
         get() = UIdentifier((psi.originalElement as? PsiNameIdentifierOwner)?.nameIdentifier ?: psi.nameIdentifier, this)
 
     override fun equals(other: Any?) = this === other
     override fun hashCode() = psi.hashCode()
 
     companion object {
-        private tailrec fun unwrap(psi: PsiMethod): PsiMethod = if (psi is UMethod) unwrap(psi.psi) else psi
-        
         fun create(psi: PsiMethod, languagePlugin: UastLanguagePlugin, containingElement: UElement?) = when (psi) {
             is PsiAnnotationMethod -> JavaUAnnotationMethod(psi, languagePlugin, containingElement)
-            else -> JavaUMethod(psi, languagePlugin, containingElement)
+            else -> JavaUMethod(psi, containingElement)
         }
     }
 }
@@ -55,6 +52,6 @@ class JavaUAnnotationMethod(
         override val psi: PsiAnnotationMethod,
         languagePlugin: UastLanguagePlugin,
         containingElement: UElement?
-) : JavaUMethod(psi, languagePlugin, containingElement), UAnnotationMethod {
+) : JavaUMethod(psi, containingElement), UAnnotationMethod {
     override val uastDefaultValue by lz { languagePlugin.convertOpt<UExpression>(psi.defaultValue, this) }
 }

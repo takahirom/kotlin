@@ -449,7 +449,7 @@ public class SupportAnnotationDetector extends Detector implements Detector.Uast
                 && !isIgnoredInIde(COLOR_USAGE, context, argument)) {
             String message = String.format(
                     "Should pass resolved color instead of resource id here: " +
-                            "`getResources().getColor(%1$s)`", argument.originalString());
+                            "`getResources().getColor(%1$s)`", argument.asSourceString());
             context.report(COLOR_USAGE, argument, context.getUastLocation(argument), message);
         }
     }
@@ -471,7 +471,7 @@ public class SupportAnnotationDetector extends Detector implements Detector.Uast
         if (types != null && types.contains(DIMEN)) {
             String message = String.format(
               "Should pass resolved pixel dimension instead of resource id here: " +
-                "`getResources().getDimension*(%1$s)`", argument.originalString());
+                "`getResources().getDimension*(%1$s)`", argument.asSourceString());
             context.report(COLOR_USAGE, argument, context.getUastLocation(argument), message);
         }
     }
@@ -773,7 +773,7 @@ public class SupportAnnotationDetector extends Detector implements Detector.Uast
     
     private static void checkResult(@NonNull JavaContext context, @NonNull UCallExpression node,
             @NonNull PsiMethod method, @NonNull PsiAnnotation annotation) {
-        if (!UastUtils.getQualifiedParentOrThis(node).isUsedAsExpression()) {
+        if (context.getUastContext().isExpressionValueUsed(UastUtils.getQualifiedParentOrThis(node))) {
             String methodName = JavaContext.getMethodName(node);
             String suggested = getAnnotationStringValue(annotation, ATTR_SUGGEST);
 
@@ -1128,13 +1128,13 @@ public class SupportAnnotationDetector extends Detector implements Detector.Uast
             message = "Expected a color resource id (`R.color.`) but received an RGB integer";
         } else if (expectedType.contains(ResourceEvaluator.COLOR_INT_MARKER_TYPE)) {
             message = String.format("Should pass resolved color instead of resource id here: " +
-              "`getResources().getColor(%1$s)`", argument.originalString());
+              "`getResources().getColor(%1$s)`", argument.asSourceString());
         } else if (actual != null && actual.size() == 1 && actual.contains(
           ResourceEvaluator.PX_MARKER_TYPE)) {
             message = "Expected a dimension resource id (`R.color.`) but received a pixel integer";
         } else if (expectedType.contains(ResourceEvaluator.PX_MARKER_TYPE)) {
             message = String.format("Should pass resolved pixel size instead of resource id here: " +
-              "`getResources().getDimension*(%1$s)`", argument.originalString());
+              "`getResources().getDimension*(%1$s)`", argument.asSourceString());
         } else if (expectedType.size() < ResourceType.getNames().length - 2) { // -2: marker types
             message = String.format("Expected resource of type %1$s",
                     Joiner.on(" or ").join(expectedType));
@@ -1361,7 +1361,7 @@ public class SupportAnnotationDetector extends Detector implements Detector.Uast
                 //    Error: Value must be > 2.5 (was 2.490000009536743) [Range]
                 //    printAtLeastExclusive(2.49f); // ERROR
                 //                          ~~~~~
-                String str = node.originalString();
+                String str = node.asSourceString();
                 if (str.endsWith("f") || str.endsWith("F")) {
                     str = str.substring(0, str.length() - 1);
                 }

@@ -26,7 +26,7 @@ val String.withMargin: String
 
 internal operator fun String.times(n: Int) = this.repeat(n)
 
-internal fun List<UElement>.logString() = joinToString(LINE_SEPARATOR) { it.logString().withMargin }
+internal fun List<UElement>.asLogString() = joinToString(LINE_SEPARATOR) { it.asLogString().withMargin }
 
 internal fun StringBuilder.appendWithSpace(s: String) {
     if (s.isNotEmpty()) {

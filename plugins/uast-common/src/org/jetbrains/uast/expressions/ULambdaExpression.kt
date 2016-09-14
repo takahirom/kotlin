@@ -40,14 +40,14 @@ interface ULambdaExpression : UExpression {
         visitor.afterVisitLambdaExpression(this)
     }
 
-    override fun logString() = log("ULambdaExpression", valueParameters, body)
+    override fun asLogString() = log("ULambdaExpression", valueParameters, body)
     
-    override fun renderString(): String {
+    override fun asRenderString(): String {
         val renderedValueParameters = if (valueParameters.isEmpty())
             ""
         else
-            valueParameters.joinToString { it.renderString() } + " ->" + LINE_SEPARATOR
+            valueParameters.joinToString { it.asRenderString() } + " ->" + LINE_SEPARATOR
 
-        return "{ " + renderedValueParameters + body.renderString().withMargin + LINE_SEPARATOR + "}"
+        return "{ " + renderedValueParameters + body.asRenderString().withMargin + LINE_SEPARATOR + "}"
     }
 }

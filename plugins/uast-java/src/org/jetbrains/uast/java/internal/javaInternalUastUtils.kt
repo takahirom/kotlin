@@ -18,15 +18,15 @@ package org.jetbrains.uast.java
 import com.intellij.openapi.util.Key
 import com.intellij.psi.JavaTokenType
 import com.intellij.psi.PsiAnnotation
+import com.intellij.psi.PsiElement
 import com.intellij.psi.PsiModifierListOwner
 import com.intellij.psi.tree.IElementType
 import org.jetbrains.uast.UDeclaration
 import org.jetbrains.uast.UElement
 import org.jetbrains.uast.UastBinaryOperator
-import org.jetbrains.uast.UastLanguagePlugin
 import java.lang.ref.WeakReference
 
-internal val CACHED_UELEMENT_KEY = Key.create<WeakReference<UElement>>("cached-java-uelement")
+internal val JAVA_CACHED_UELEMENT_KEY = Key.create<WeakReference<UElement>>("cached-java-uelement")
 
 internal fun IElementType.getOperatorType() = when (this) {
     JavaTokenType.EQ -> UastBinaryOperator.ASSIGN
@@ -61,10 +61,6 @@ internal fun IElementType.getOperatorType() = when (this) {
     else -> UastBinaryOperator.OTHER
 }
 
-internal tailrec fun UElement.getLanguagePlugin(): UastLanguagePlugin {
-    return if (this is UDeclaration) languagePlugin else containingElement!!.getLanguagePlugin()
-}
-
 internal fun <T> singletonListOrEmpty(element: T?) = if (element != null) listOf(element) else emptyList<T>()
 
 @Suppress("NOTHING_TO_INLINE")
@@ -76,3 +72,9 @@ internal fun <T> lz(initializer: () -> T) = lazy(LazyThreadSafetyMode.NONE, init
 
 val PsiModifierListOwner.annotations: Array<PsiAnnotation>
     get() = modifierList?.annotations ?: emptyArray()
+
+internal inline fun <reified T : UDeclaration, reified P : PsiElement> unwrap(element: P): P {
+    val unwrapped = if (element is T) element.psi else element
+    assert(unwrapped !is UElement)
+    return unwrapped as P
+}

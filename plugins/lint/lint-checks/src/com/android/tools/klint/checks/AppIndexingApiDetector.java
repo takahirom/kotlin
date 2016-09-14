@@ -373,7 +373,7 @@ public class AppIndexingApiDetector extends Detector implements XmlScanner, Dete
                 if (!mHasAddAppIndexApi) {
                     String message = String.format(
                             "GoogleApiClient `%1$s` has not added support for App Indexing API",
-                            startClient.originalString());
+                            startClient.asSourceString());
                     mContext.report(ISSUE_APP_INDEXING_API, startClient,
                                     mContext.getUastLocation(startClient), message);
                 }
@@ -381,7 +381,7 @@ public class AppIndexingApiDetector extends Detector implements XmlScanner, Dete
                 // GoogleApiClient `connect` should exist
                 if (!hasOperand(startClient, mConnectMethods)) {
                     String message = String.format("GoogleApiClient `%1$s` is not connected",
-                                    startClient.originalString());
+                                    startClient.asSourceString());
                     mContext.report(ISSUE_APP_INDEXING_API, startClient,
                                     mContext.getUastLocation(startClient), message);
                 }
@@ -405,7 +405,7 @@ public class AppIndexingApiDetector extends Detector implements XmlScanner, Dete
                 if (!mHasAddAppIndexApi) {
                     String message = String.format(
                             "GoogleApiClient `%1$s` has not added support for App Indexing API",
-                            endClient.originalString());
+                            endClient.asSourceString());
                     mContext.report(ISSUE_APP_INDEXING_API, endClient,
                                     mContext.getUastLocation(endClient), message);
                 }
@@ -413,7 +413,7 @@ public class AppIndexingApiDetector extends Detector implements XmlScanner, Dete
                 // GoogleApiClient `disconnect` should exist
                 if (!hasOperand(endClient, mDisconnectMethods)) {
                     String message = String.format("GoogleApiClient `%1$s`"
-                            + " is not disconnected", endClient.originalString());
+                            + " is not disconnected", endClient.asSourceString());
                     mContext.report(ISSUE_APP_INDEXING_API, endClient,
                                     mContext.getUastLocation(endClient), message);
                 }
@@ -704,7 +704,7 @@ public class AppIndexingApiDetector extends Detector implements XmlScanner, Dete
             List<UExpression> expressions = call.getValueArguments();
             if (!expressions.isEmpty()) {
                 UExpression argument2 = expressions.get(0);
-                if (argument.originalString().equals(argument2.originalString())) {
+                if (argument.asSourceString().equals(argument2.asSourceString())) {
                     return true;
                 }
             }
@@ -722,7 +722,7 @@ public class AppIndexingApiDetector extends Detector implements XmlScanner, Dete
     private static boolean hasOperand(UExpression operand, List<UCallExpression> list) {
         for (UCallExpression method : list) {
             UElement operand2 = method.getReceiver();
-            if (operand2 != null && operand.originalString().equals(operand2.originalString())) {
+            if (operand2 != null && operand.asSourceString().equals(operand2.asSourceString())) {
                 return true;
             }
         }

@@ -25,7 +25,7 @@ import org.jetbrains.uast.psi.PsiElementBacked
 class KotlinUPostfixExpression(
         override val psi: KtPostfixExpression,
         override val containingElement: UElement?
-) : KotlinAbstractUExpression(), UPostfixExpression, PsiElementBacked, KotlinUElementWithType, KotlinEvaluatableUElement {
+) : KotlinAbstractUExpression(), UPostfixExpression, PsiElementBacked, KotlinUElementWithType, KotlinEvaluatableUElement, UResolvable {
     override val operand by lz { KotlinConverter.convertOrEmpty(psi.baseExpression, this) }
 
     override val operator = when (psi.operationToken) {
@@ -38,8 +38,10 @@ class KotlinUPostfixExpression(
     override val operatorIdentifier: UIdentifier?
         get() = UIdentifier(psi.operationReference, this)
 
+    override fun resolveOperator() = psi.operationReference.resolveCallToDeclaration(context = this) as? PsiMethod
+
     override fun resolve(): PsiMethod? = when (psi.operationToken) {
         KtTokens.EXCLEXCL -> operand.tryResolve() as? PsiMethod
-        else -> psi.operationReference.resolveCallToDeclaration(context = this) as? PsiMethod
+        else -> null
     }
 }

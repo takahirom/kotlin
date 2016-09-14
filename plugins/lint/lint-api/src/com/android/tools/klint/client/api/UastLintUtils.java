@@ -29,7 +29,6 @@ import com.intellij.psi.PsiElement;
 import com.intellij.psi.PsiField;
 import com.intellij.psi.PsiJavaFile;
 import com.intellij.psi.PsiLocalVariable;
-import com.intellij.psi.PsiMethod;
 import com.intellij.psi.PsiModifier;
 import com.intellij.psi.PsiParameter;
 import com.intellij.psi.PsiType;
@@ -43,7 +42,6 @@ import org.jetbrains.uast.UQualifiedReferenceExpression;
 import org.jetbrains.uast.UResolvable;
 import org.jetbrains.uast.USimpleNameReferenceExpression;
 import org.jetbrains.uast.UVariable;
-import org.jetbrains.uast.UastContext;
 import org.jetbrains.uast.UastUtils;
 import org.jetbrains.uast.expressions.UReferenceExpression;
 import org.jetbrains.uast.java.JavaAbstractUExpression;
@@ -302,7 +300,7 @@ public class UastLintUtils {
     @Nullable
     public static String getIdentifier(UExpression expression) {
         if (expression instanceof ULiteralExpression) {
-            expression.renderString();
+            expression.asRenderString();
         } else if (expression instanceof USimpleNameReferenceExpression) {
             return ((USimpleNameReferenceExpression) expression).getIdentifier();
         } else if (expression instanceof UQualifiedReferenceExpression) {

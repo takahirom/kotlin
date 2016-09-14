@@ -40,7 +40,7 @@ interface UArrayAccessExpression : UExpression {
         visitor.afterVisitArrayAccessExpression(this)
     }
 
-    override fun logString() = log("UArrayAccessExpression", receiver, indices)
-    override fun renderString() = receiver.renderString() +
-            indices.joinToString(prefix = "[", postfix = "]") { it.renderString() }
+    override fun asLogString() = log("UArrayAccessExpression", receiver, indices)
+    override fun asRenderString() = receiver.asRenderString() +
+            indices.joinToString(prefix = "[", postfix = "]") { it.asRenderString() }
 }

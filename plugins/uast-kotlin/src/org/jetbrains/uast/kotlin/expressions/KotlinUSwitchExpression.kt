@@ -29,16 +29,16 @@ class KotlinUSwitchExpression(
 
     override val body: UExpression by lz {
         object : KotlinUExpressionList(psi, KotlinSpecialExpressionKinds.WHEN, this) {
-            override fun renderString() = expressions.joinToString("\n") { it.renderString().withMargin }
+            override fun asRenderString() = expressions.joinToString("\n") { it.asRenderString().withMargin }
         }.apply {
             expressions = this@KotlinUSwitchExpression.psi.entries.map { KotlinUSwitchEntry(it, this) }
         }
     }
 
-    override fun renderString() = buildString {
-        val expr = expression?.let { "(" + it.renderString() + ") " } ?: ""
+    override fun asRenderString() = buildString {
+        val expr = expression?.let { "(" + it.asRenderString() + ") " } ?: ""
         appendln("switch $expr {")
-        appendln(body.renderString())
+        appendln(body.asRenderString())
         appendln("}")
     }
 }
@@ -75,9 +75,9 @@ class KotlinUSwitchEntry(
 
     override val body: UExpression by lz {
         object : KotlinUExpressionList(psi, KotlinSpecialExpressionKinds.WHEN_ENTRY, this) {
-            override fun renderString() = buildString {
+            override fun asRenderString() = buildString {
                 appendln("{")
-                expressions.forEach { appendln(it.renderString().withMargin) }
+                expressions.forEach { appendln(it.asRenderString().withMargin) }
                 appendln("}")
             }
         }.apply {
@@ -92,8 +92,6 @@ class KotlinUSwitchEntry(
                     get() = null
                 override val containingElement: UElement?
                     get() = this@KotlinUSwitchEntry
-                override val isUsedAsExpression: Boolean
-                    get() = false
             }
         }
     }

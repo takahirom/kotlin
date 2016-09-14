@@ -34,7 +34,6 @@ interface UThrowExpression : UExpression {
         visitor.afterVisitThrowExpression(this)
     }
 
-    override fun renderString() = "throw " + thrownExpression.renderString()
-
-    override fun logString() = log("UThrowExpression", thrownExpression)
+    override fun asRenderString() = "throw " + thrownExpression.asRenderString()
+    override fun asLogString() = log("UThrowExpression", thrownExpression)
 }

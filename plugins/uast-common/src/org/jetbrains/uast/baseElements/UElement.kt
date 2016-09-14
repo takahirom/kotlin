@@ -49,7 +49,7 @@ interface UElement {
      * @return the expression tree for this element.
      * @see [UIfExpression] for example.
      */
-    fun logString(): String
+    fun asLogString(): String
 
     /**
      * Returns the string in pseudo-code.
@@ -63,7 +63,7 @@ interface UElement {
      * @return the rendered text.
      * @see [UIfExpression] for example.
      */
-    fun renderString(): String = logString()
+    fun asRenderString(): String = asLogString()
 
     /**
      * Returns the string as written in the source file.
@@ -71,7 +71,7 @@ interface UElement {
      *
      * @return the original text.
      */
-    fun originalString(): String = renderString()
+    fun asSourceString(): String = asRenderString()
 
     /**
      * Passes the element to the specified visitor.

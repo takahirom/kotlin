@@ -34,7 +34,7 @@ class KotlinUPrefixExpression(
     override val operatorIdentifier: UIdentifier?
         get() = UIdentifier(psi.operationReference, this)
 
-    override fun resolve() = psi.operationReference.resolveCallToDeclaration(context = this) as? PsiMethod
+    override fun resolveOperator() = psi.operationReference.resolveCallToDeclaration(context = this) as? PsiMethod
 
     override val operator = when (psi.operationToken) {
         KtTokens.EXCL -> UastPrefixOperator.LOGICAL_NOT

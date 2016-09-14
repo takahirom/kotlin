@@ -25,5 +25,5 @@ interface UReferenceExpression : UExpression, UResolvable {
      */
     val resolvedName: String?
     
-    override fun logString() = "UReferenceExpression"
+    override fun asLogString() = "UReferenceExpression"
 }

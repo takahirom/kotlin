@@ -40,7 +40,7 @@ class JavaUTypeReferenceExpression(
         get() = psi.type
 }
 
-class JavaClassUSimpleReferenceExpression(
+class JavaClassUSimpleNameReferenceExpression(
         override val identifier: String,
         val ref: PsiJavaReference,
         override val psi: PsiElement?,

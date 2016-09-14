@@ -22,7 +22,6 @@ interface UTypeReferenceExpression : UExpression {
         visitor.afterVisitTypeReferenceExpression(this)
     }
 
-    override fun logString() = "UTypeReferenceExpression (${type.name})"
-
-    override fun renderString() = type.name
+    override fun asLogString() = "UTypeReferenceExpression (${type.name})"
+    override fun asRenderString() = type.name
 }

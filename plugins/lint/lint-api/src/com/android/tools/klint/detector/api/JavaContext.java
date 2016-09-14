@@ -210,7 +210,7 @@ public class JavaContext extends Context {
     @NonNull
     public Location getUastNameLocation(@NonNull UElement element) {
         if (element instanceof UDeclaration) {
-            UElement nameIdentifier = ((UDeclaration) element).getUastNameIdentifier();
+            UElement nameIdentifier = ((UDeclaration) element).getUastAnchor();
             if (nameIdentifier != null) {
                 return getUastLocation(nameIdentifier);
             }
@@ -245,7 +245,7 @@ public class JavaContext extends Context {
             if (file == null) {
                 return Location.NONE;
             }
-            File ioFile = file.getIoFile();
+            File ioFile = UastUtils.getIoFile(file);
             if (ioFile == null) {
                 return Location.NONE;
             }

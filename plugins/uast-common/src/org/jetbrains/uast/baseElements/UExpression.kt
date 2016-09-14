@@ -29,17 +29,6 @@ interface UExpression : UElement {
     fun evaluate(): Any? = null
 
     /**
-     * Returns the String expression value, or null if the value can't be calculated or if the calculated value is not a String. 
-     */
-    fun evaluateString(): String? = evaluate() as? String
-
-    /**
-     * Returns true if this expression value is used.
-     * Do not rely on this property too much, its value can be approximate in some cases.
-     */
-    val isUsedAsExpression: Boolean
-
-    /**
      * Returns expression type, or null if type can not be inferred, or if this expression is a statement.
      */
     fun getExpressionType(): PsiType? = null
@@ -69,14 +58,6 @@ interface UAnnotated : UElement {
 }
 
 /**
- * Helper interface for [UAnnotated] elements without any annotations specified.
- */
-interface NoAnnotations : UAnnotated {
-    override val annotations: List<PsiAnnotation>
-        get() = emptyList()
-}
-
-/**
  * In some cases (user typing, syntax error) elements, which are supposed to exist, are missing.
  * The obvious example — the lack of the condition expression in [UIfExpression], e.g. `if () return`.
  * [UIfExpression.condition] is required to return not-null values,
@@ -88,8 +69,5 @@ object UastEmptyExpression : UExpression {
     override val containingElement: UElement?
         get() = null
 
-    override val isUsedAsExpression: Boolean
-        get() = false
-
-    override fun logString() = "EmptyExpression"
+    override fun asLogString() = "EmptyExpression"
 }

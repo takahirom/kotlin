@@ -28,72 +28,62 @@ import org.jetbrains.uast.kotlin.declarations.KotlinUMethod
 
 class KotlinUClass private constructor(
         psi: KtLightClass,
-        override val languagePlugin: UastLanguagePlugin,
         override val containingElement: UElement?
 ) : AbstractJavaUClass(), PsiClass by psi {
     val ktClass = psi.kotlinOrigin
-    override val psi = unwrap(psi)
+    override val psi = unwrap<UClass, PsiClass>(psi)
 
-    override val uastNameIdentifier: UElement
+    override val uastAnchor: UElement
         get() = UIdentifier(psi.nameIdentifier, this)
     
     override val uastMethods: List<UMethod> by lz {
         val primaryConstructor = ktClass?.getPrimaryConstructor()?.toLightMethods()?.firstOrNull()
-        val hasSecondaryConstructors = ktClass?.getSecondaryConstructors()?.isNotEmpty() ?: false
+        val initBlocks = ktClass?.getAnonymousInitializers() ?: emptyList()
+
         psi.methods.map {
-            if (it is KtLightMethod && it.isConstructor 
-                    && (it == primaryConstructor || (primaryConstructor == null && !hasSecondaryConstructors))) {
-                object : KotlinUMethod(it, languagePlugin, this@KotlinUClass) {
+            if (it is KtLightMethod && it.isConstructor && initBlocks.isNotEmpty()
+                && (primaryConstructor == null || it == primaryConstructor)) {
+                object : KotlinUMethod(it, this@KotlinUClass) {
                     override val uastBody by lz {
                         val initializers = ktClass?.getAnonymousInitializers() ?: return@lz UastEmptyExpression
                         val containingMethod = this
-                        
+
                         object : UBlockExpression {
                             override val containingElement: UElement?
                                 get() = containingMethod
-                            
+
                             override val expressions by lz {
-                                initializers.map { languagePlugin.convertOpt(it.body, this) ?: UastEmptyExpression } 
+                                initializers.map { getLanguagePlugin().convertOpt(it.body, this) ?: UastEmptyExpression }
                             }
-                            
-                            override val isUsedAsExpression: Boolean
-                                get() = false
                         }
                     }
                 }
-            } 
+            }
             else {
-                languagePlugin.convert<UMethod>(it, this)
+                getLanguagePlugin().convert<UMethod>(it, this)
             }
         } 
     }
 
     companion object {
-        private tailrec fun unwrap(psi: PsiClass): PsiClass = if (psi is UClass) unwrap(psi.psi) else psi
-
-        fun create(psi: KtLightClass, languagePlugin: UastLanguagePlugin, containingElement: UElement?): UClass {
+        fun create(psi: KtLightClass, containingElement: UElement?): UClass {
             return if (psi is PsiAnonymousClass)
-                KotlinUAnonymousClass(psi, languagePlugin, containingElement)
+                KotlinUAnonymousClass(psi, containingElement)
             else
-                KotlinUClass(psi, languagePlugin, containingElement)
+                KotlinUClass(psi, containingElement)
         }
     }
 }
 
 class KotlinUAnonymousClass(
         psi: PsiAnonymousClass,
-        override val languagePlugin: UastLanguagePlugin,
         override val containingElement: UElement?
 ) : AbstractJavaUClass(), UAnonymousClass, PsiAnonymousClass by psi {
-    override val psi: PsiAnonymousClass = unwrap(psi)
+    override val psi: PsiAnonymousClass = unwrap<UAnonymousClass, PsiAnonymousClass>(psi)
 
-    override val uastNameIdentifier: UElement?
+    override val uastAnchor: UElement?
         get() {
             val ktClassOrObject = (psi.originalElement as? KtLightClass)?.kotlinOrigin as? KtObjectDeclaration ?: return null 
             return UIdentifier(ktClassOrObject.getObjectKeyword(), this)
         }
-
-    private companion object {
-        tailrec fun unwrap(psi: PsiAnonymousClass): PsiAnonymousClass = if (psi is UAnonymousClass) unwrap(psi.psi) else psi
-    }
 }

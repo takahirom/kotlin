@@ -14,10 +14,11 @@ interface UClass : UDeclaration, PsiClass {
     /**
      * Returns a [UClass] wrapper of the superclass of this class, or null if this class is [java.lang.Object].
      */
-    fun getUastSuperClass(): UClass? {
-        val superClass = superClass ?: return null
-        return languagePlugin.context.convertWithParent(superClass)
-    }
+    val uastSuperClass: UClass?
+        get() {
+            val superClass = superClass ?: return null
+            return getUastContext().convertWithParent(superClass)
+        }
 
     /**
      * Returns [UDeclaration] wrappers for the class declarations.
@@ -29,7 +30,7 @@ interface UClass : UDeclaration, PsiClass {
     val uastMethods: List<UMethod>
     val uastNestedClasses: List<UClass>
 
-    override fun logString() = "UClass (name = $name)"
+    override fun asLogString() = "UClass (name = $name)"
 
     override fun accept(visitor: UastVisitor) {
         if (visitor.visitClass(this)) return

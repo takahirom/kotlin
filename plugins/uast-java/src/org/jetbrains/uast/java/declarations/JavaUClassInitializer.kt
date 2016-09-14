@@ -20,22 +20,17 @@ import com.intellij.psi.PsiClassInitializer
 import org.jetbrains.uast.*
 
 class JavaUClassInitializer(
-        psi: PsiClassInitializer, 
-        override val languagePlugin: UastLanguagePlugin, 
+        psi: PsiClassInitializer,
         override val containingElement: UElement?
 ) : UClassInitializer, PsiClassInitializer by psi {
-    override val psi = unwrap(psi)
+    override val psi = unwrap<UClassInitializer, PsiClassInitializer>(psi)
 
-    override val uastNameIdentifier: UElement?
+    override val uastAnchor: UElement?
         get() = null
     
-    override val uastBody by lz { languagePlugin.convertOpt(psi.body, this) ?: UastEmptyExpression }
-    override val uastAnnotations by lz { psi.annotations.map { SimpleUAnnotation(it, languagePlugin, this) } }
+    override val uastBody by lz { getLanguagePlugin().convertOpt(psi.body, this) ?: UastEmptyExpression }
+    override val uastAnnotations by lz { psi.annotations.map { SimpleUAnnotation(it, this) } }
 
     override fun equals(other: Any?) = this === other
     override fun hashCode() = psi.hashCode()
-
-    private companion object {
-        tailrec fun unwrap(psi: PsiClassInitializer): PsiClassInitializer = if (psi is UClassInitializer) unwrap(psi.psi) else psi
-    }
 }

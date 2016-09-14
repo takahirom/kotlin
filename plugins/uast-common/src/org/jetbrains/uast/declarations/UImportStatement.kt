@@ -17,7 +17,7 @@ interface UImportStatement : UResolvable, UElement, PsiElementBacked {
      */
     val importReference: UElement?
     
-    override fun logString() = "UImportStatement (onDemand = $isOnDemand)"
+    override fun asLogString() = "UImportStatement (onDemand = $isOnDemand)"
 
     override fun accept(visitor: UastVisitor) {
         if (visitor.visitImportStatement(this)) return

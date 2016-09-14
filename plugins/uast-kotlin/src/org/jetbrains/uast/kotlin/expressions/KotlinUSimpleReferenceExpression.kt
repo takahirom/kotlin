@@ -39,9 +39,9 @@ open class KotlinUSimpleReferenceExpression(
         override val containingElement: UElement?
 ) : KotlinAbstractUExpression(), USimpleNameReferenceExpression, PsiElementBacked, KotlinUElementWithType, KotlinEvaluatableUElement {
     private val resolvedDeclaration by lz { psi.resolveCallToDeclaration(this) }
-    
+
     override fun resolve() = resolvedDeclaration
-    
+
     override val resolvedName: String?
         get() = (resolvedDeclaration as? PsiNamedElement)?.name
 
@@ -62,12 +62,12 @@ open class KotlinUSimpleReferenceExpression(
             } else {
                 null
             }
-            
+
             if (accessorDescriptor is JavaMethodDescriptor && resolvedCall != null) {
                 KotlinAccessorCallExpression(psi, this, resolvedCall, accessorDescriptor, setterValue).accept(visitor)
             }
         }
-        
+
         visitor.afterVisitSimpleNameReferenceExpression(this)
     }
 
@@ -77,17 +77,14 @@ open class KotlinUSimpleReferenceExpression(
         is KtSimpleNameExpression -> findAssignment(element, element.parent)
         else -> null
     }
-    
-    private class KotlinAccessorCallExpression(
+
+    class KotlinAccessorCallExpression(
             override val psi: KtElement,
             override val containingElement: KotlinUSimpleReferenceExpression,
             private val resolvedCall: ResolvedCall<*>,
             private val accessorDescriptor: DeclarationDescriptor,
-            private val setterValue: KtExpression?
+            val setterValue: KtExpression?
     ) : UCallExpression, PsiElementBacked {
-        override val isUsedAsExpression: Boolean
-            get() = setterValue == null
-        
         override val methodName: String?
             get() = accessorDescriptor.name.asString()
 
@@ -99,15 +96,15 @@ open class KotlinUSimpleReferenceExpression(
                 else
                     null
             }
-        
+
         override val receiverType by lz {
-            val type = (resolvedCall.extensionReceiver ?: resolvedCall.dispatchReceiver)?.type ?: return@lz null
+            val type = (resolvedCall.dispatchReceiver ?: resolvedCall.extensionReceiver)?.type ?: return@lz null
             type.toPsiType(this, psi, boxed = true)
         }
-        
+
         override val methodIdentifier: UIdentifier?
             get() = UIdentifier(containingElement.psi, this)
-        
+
         override val classReference: UReferenceExpression?
             get() = null
 
@@ -120,21 +117,21 @@ open class KotlinUSimpleReferenceExpression(
             else
                 emptyList()
         }
-        
+
         override val typeArgumentCount: Int
             get() = resolvedCall.typeArguments.size
-        
+
         override val typeArguments by lz {
             resolvedCall.typeArguments.values.map { it.toPsiType(this, psi, true) }
         }
-        
-        override val returnType by lz { 
-            (accessorDescriptor as? CallableDescriptor)?.returnType?.toPsiType(this, psi, boxed = false) 
-        } 
+
+        override val returnType by lz {
+            (accessorDescriptor as? CallableDescriptor)?.returnType?.toPsiType(this, psi, boxed = false)
+        }
 
         override val kind: UastCallKind
             get() = UastCallKind.METHOD_CALL
-        
+
         override fun resolve(): PsiMethod? {
             val source = accessorDescriptor.toSource()
             return KotlinUFunctionCallExpression.resolveSource(accessorDescriptor, source)

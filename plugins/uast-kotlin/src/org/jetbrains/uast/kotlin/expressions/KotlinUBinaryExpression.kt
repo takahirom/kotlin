@@ -38,14 +38,14 @@ class KotlinUBinaryExpression(
                 "xor" to UastBinaryOperator.BITWISE_XOR
         )
     }
-    
+
     override val leftOperand by lz { KotlinConverter.convertOrEmpty(psi.left, this) }
     override val rightOperand by lz { KotlinConverter.convertOrEmpty(psi.right, this) }
 
     override val operatorIdentifier: UIdentifier?
         get() = UIdentifier(psi.operationReference, this)
 
-    override fun resolve() = psi.operationReference.resolveCallToDeclaration(context = this) as? PsiMethod
+    override fun resolveOperator() = psi.operationReference.resolveCallToDeclaration(context = this) as? PsiMethod
 
     override val operator = when (psi.operationToken) {
         KtTokens.EQ -> UastBinaryOperator.ASSIGN
@@ -74,14 +74,14 @@ class KotlinUBinaryExpression(
         KtTokens.RANGE -> KotlinBinaryOperators.RANGE_TO
         else -> run { // Handle bitwise operators
             val other = UastBinaryOperator.OTHER
-            val ref = psi.operationReference 
+            val ref = psi.operationReference
             val resolvedCall = psi.operationReference.getResolvedCall(ref.analyze()) ?: return@run other
             val resultingDescriptor = resolvedCall.resultingDescriptor as? FunctionDescriptor ?: return@run other
             val applicableOperator = BITWISE_OPERATORS[resultingDescriptor.name.asString()] ?: return@run other
-            
+
             val containingClass = resultingDescriptor.containingDeclaration as? ClassDescriptor ?: return@run other
-            if (containingClass.typeConstructor.supertypes.any { 
-                it.constructor.declarationDescriptor?.fqNameSafe?.asString() == "kotlin.Number" 
+            if (containingClass.typeConstructor.supertypes.any {
+                it.constructor.declarationDescriptor?.fqNameSafe?.asString() == "kotlin.Number"
             }) applicableOperator else other
         }
     }
@@ -103,5 +103,5 @@ class KotlinCustomUBinaryExpression(
     override val operatorIdentifier: UIdentifier?
         get() = null
 
-    override fun resolve() = null
+    override fun resolveOperator() = null
 }

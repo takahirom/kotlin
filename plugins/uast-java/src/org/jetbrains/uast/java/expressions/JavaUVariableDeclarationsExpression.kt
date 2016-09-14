@@ -9,11 +9,4 @@ class JavaUVariableDeclarationsExpression(
 ) : UVariableDeclarationsExpression {
     override lateinit var variables: List<UVariable>
         internal set
-
-    override val isUsedAsExpression: Boolean
-        get() = false
-
-    constructor(parent: UElement?, variables: List<UVariable>) : this(parent) {
-        this.variables = variables
-    }
 }

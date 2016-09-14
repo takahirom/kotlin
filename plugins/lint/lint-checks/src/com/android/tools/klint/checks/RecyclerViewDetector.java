@@ -206,7 +206,7 @@ public class RecyclerViewDetector extends Detector implements Detector.UastScann
                                 + "library will update the UI in the next animation frame "
                                 + "causing a delayed update & potential jumps if the item "
                                 + "resizes.",
-                            sourceBinderReference.originalString());
+                            sourceBinderReference.asSourceString());
                     context.report(DATA_BINDER, source, context.getUastLocation(source), message);
                 }
             }

@@ -32,9 +32,4 @@ abstract class KotlinAbstractUElement : UElement {
     }
 }
 
-abstract class KotlinAbstractUExpression : KotlinAbstractUElement(), UExpression {
-    override val isUsedAsExpression by lz {
-        val ktElement = ((this as? PsiElementBacked)?.psi as? KtElement) ?: return@lz false
-        ktElement.analyze()[BindingContext.USED_AS_EXPRESSION, ktElement] ?: false
-    }
-}
+abstract class KotlinAbstractUExpression : KotlinAbstractUElement(), UExpression

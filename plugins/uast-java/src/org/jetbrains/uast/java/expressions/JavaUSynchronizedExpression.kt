@@ -35,7 +35,6 @@ class JavaUSynchronizedExpression(
 
     override fun accept(visitor: UastVisitor) {
         if (visitor.visitBlockExpression(this)) return
-        psi.lockExpression
         expressions.acceptList(visitor)
         lockExpression.accept(visitor)
         visitor.afterVisitBlockExpression(this)

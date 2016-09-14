@@ -230,7 +230,7 @@ public class JavaPerformanceDetector extends Detector implements Detector.UastSc
                         || typeName.equals(TYPE_BYTE_WRAPPER))
                         //&& node.astTypeReference().astParts().size() == 1
                         && node.getValueArgumentCount() == 1) {
-                    String argument = node.getValueArguments().get(0).originalString();
+                    String argument = node.getValueArguments().get(0).asSourceString();
                     mContext.report(USE_VALUE_OF, node, mContext.getUastLocation(node), getUseValueOfErrorMessage(
                             typeName, argument));
                 }

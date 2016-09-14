@@ -31,19 +31,18 @@ class KotlinULambdaExpression(
     override val body by lz { KotlinConverter.convertOrEmpty(psi.bodyExpression, this) }
     
     override val valueParameters by lz {
-        val languagePlugin = getLanguagePlugin()
         psi.valueParameters.mapIndexed { i, p ->
-            KotlinUParameter(UastKotlinPsiParameter.create(p, psi, this, i), languagePlugin, this)
+            KotlinUParameter(UastKotlinPsiParameter.create(p, psi, this, i), this)
         }
     }
     
-    override fun renderString(): String {
+    override fun asRenderString(): String {
         val renderedValueParameters = if (valueParameters.isEmpty())
             ""
         else
-            valueParameters.joinToString { it.renderString() } + " ->\n"
+            valueParameters.joinToString { it.asRenderString() } + " ->\n"
         val expressions = (body as? UBlockExpression)?.expressions
-                                  ?.joinToString("\n") { it.renderString().withMargin } ?: body.renderString()
+                                  ?.joinToString("\n") { it.asRenderString().withMargin } ?: body.asRenderString()
 
         return "{ " + renderedValueParameters + "\n" + expressions + "\n}"
     }

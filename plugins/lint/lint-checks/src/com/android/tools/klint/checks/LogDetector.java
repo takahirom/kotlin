@@ -206,7 +206,7 @@ public class LogDetector extends Detector implements Detector.UastScanner {
                 return false;
             }
             if (argument instanceof UBinaryExpressionWithType) {
-                String string = argument.evaluateString();
+                String string = UastUtils.evaluateString(argument);
                 //noinspection VariableNotUsedInsideIf
                 if (string != null) { // does it resolve to a constant?
                     return false;
@@ -215,7 +215,7 @@ public class LogDetector extends Detector implements Detector.UastScanner {
                 // Just a simple local variable/field reference
                 return false;
             } else if (argument instanceof UQualifiedReferenceExpression) {
-                String string = argument.evaluateString();
+                String string = UastUtils.evaluateString(argument);
                 //noinspection VariableNotUsedInsideIf
                 if (string != null) {
                     return false;
@@ -294,10 +294,10 @@ public class LogDetector extends Detector implements Detector.UastScanner {
                     location.setSecondary(alternate);
                     String isLoggableDescription = resolved1 != null
                             ? resolved1.getName()
-                            : isLoggableTag.renderString();
+                            : isLoggableTag.asRenderString();
                     String logCallDescription = resolved2 != null
                             ? resolved2.getName()
-                            : logTag.renderString();
+                            : logTag.asRenderString();
                     String message = String.format(
                             "Mismatched tags: the `%1$s()` and `isLoggable()` calls typically " +
                                     "should pass the same tag: `%2$s` versus `%3$s`",

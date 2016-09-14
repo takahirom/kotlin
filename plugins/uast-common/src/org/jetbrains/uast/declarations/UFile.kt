@@ -36,12 +36,7 @@ interface UFile : UElement {
      */
     val languagePlugin: UastLanguagePlugin
 
-    override fun logString() = "UFile"
-
-    /**
-     * Get a physical [File] for this file, or null if there is no such file on disk.
-     */
-    fun getIoFile(): File? = psi.virtualFile?.let { VfsUtilCore.virtualToIoFile(it) }
+    override fun asLogString() = "UFile"
 
     /**
      * [UFile] is a top-level element of the Uast hierarchy, thus the [containingElement] always returns null for it.

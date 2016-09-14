@@ -38,7 +38,7 @@ interface UQualifiedReferenceExpression : UReferenceExpression {
      */
     val accessType: UastQualifiedExpressionAccessType
 
-    override fun renderString() = receiver.renderString() + accessType.name + selector.renderString()
+    override fun asRenderString() = receiver.asRenderString() + accessType.name + selector.asRenderString()
 
     override fun accept(visitor: UastVisitor) {
         if (visitor.visitQualifiedReferenceExpression(this)) return
@@ -47,5 +47,5 @@ interface UQualifiedReferenceExpression : UReferenceExpression {
         visitor.afterVisitQualifiedReferenceExpression(this)
     }
 
-    override fun logString() = log("UQualifiedExpression", receiver, selector)
+    override fun asLogString() = log("UQualifiedExpression", receiver, selector)
 }

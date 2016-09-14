@@ -19,13 +19,8 @@ interface UDeclaration : UElement, PsiElementBacked, PsiModifierListOwner {
     /**
      * Returns the declaration name identifier, or null if the declaration is anonymous.
      */
-    val uastNameIdentifier: UElement?
+    val uastAnchor: UElement?
 
-    /**
-     * Get a plugin for a language in which this declaration is written.
-     */
-    val languagePlugin: UastLanguagePlugin
-    
     val uastAnnotations: List<UAnnotation>
 
     /**

@@ -24,7 +24,5 @@ class UnknownJavaExpression(
         override val psi: PsiElement,
         override val containingElement: UElement?
 ) : UExpression, PsiElementBacked {
-    override fun logString() = "[!] UnknownJavaExpression ($psi)"
-    override val isUsedAsExpression: Boolean
-        get() = (containingElement as? UExpression)?.isUsedAsExpression ?: false
+    override fun asLogString() = "[!] UnknownJavaExpression ($psi)"
 }

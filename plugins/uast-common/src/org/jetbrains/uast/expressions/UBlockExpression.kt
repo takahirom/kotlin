@@ -34,11 +34,11 @@ interface UBlockExpression : UExpression {
         visitor.afterVisitBlockExpression(this)
     }
 
-    override fun logString() = log("UBlockExpression", expressions)
+    override fun asLogString() = log("UBlockExpression", expressions)
 
-    override fun renderString() = buildString {
+    override fun asRenderString() = buildString {
         appendln("{")
-        expressions.forEach { appendln(it.renderString().withMargin) }
+        expressions.forEach { appendln(it.asRenderString().withMargin) }
         appendln("}")
     }
 }

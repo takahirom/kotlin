@@ -24,40 +24,35 @@ import org.jetbrains.kotlin.psi.KtParameter
 import org.jetbrains.uast.*
 import org.jetbrains.uast.java.JavaUMethod
 import org.jetbrains.uast.kotlin.lz
+import org.jetbrains.uast.kotlin.unwrap
 
 open class KotlinUMethod(
         psi: KtLightMethod,
-        languagePlugin: UastLanguagePlugin,
         containingElement: UElement?
-) : JavaUMethod(psi, languagePlugin, containingElement) {
-    override val psi: KtLightMethod = psi
+) : JavaUMethod(psi, containingElement) {
+    override val psi: KtLightMethod = unwrap<UMethod, KtLightMethod>(psi)
     private val kotlinOrigin = (psi.originalElement as KtLightElement<*, *>).kotlinOrigin
 
     override val uastBody by lz {
-        val originalElement = psi.originalElement
-        val bodyExpression = when (originalElement) {
-            is KtLightMethod -> (kotlinOrigin as? KtFunction)?.bodyExpression
-            else -> null
-        } ?: return@lz null
-        languagePlugin.convertOpt<UExpression>(bodyExpression, this)
+        val bodyExpression = (kotlinOrigin as? KtFunction)?.bodyExpression ?: return@lz null
+        getLanguagePlugin().convertOpt<UExpression>(bodyExpression, this)
     }
     
     companion object {
-        fun create(psi: KtLightMethod, languagePlugin: UastLanguagePlugin, containingElement: UElement?) = when (psi) {
-            is KtLightMethodImpl.KtLightAnnotationMethod -> KotlinUAnnotationMethod(psi, languagePlugin, containingElement)
-            else -> KotlinUMethod(psi, languagePlugin, containingElement)
+        fun create(psi: KtLightMethod, containingElement: UElement?) = when (psi) {
+            is KtLightMethodImpl.KtLightAnnotationMethod -> KotlinUAnnotationMethod(psi, containingElement)
+            else -> KotlinUMethod(psi, containingElement)
         }
     }
 }
 
 class KotlinUAnnotationMethod(
         override val psi: KtLightMethodImpl.KtLightAnnotationMethod,
-        languagePlugin: UastLanguagePlugin,
         containingElement: UElement?
-) : KotlinUMethod(psi, languagePlugin, containingElement), UAnnotationMethod {
+) : KotlinUMethod(psi, containingElement), UAnnotationMethod {
     override val uastDefaultValue by lz {
         val annotationParameter = psi.kotlinOrigin as? KtParameter ?: return@lz null
         val defaultValue = annotationParameter.defaultValue ?: return@lz null
-        languagePlugin.convertOpt<UExpression>(defaultValue, this)
+        getLanguagePlugin().convertOpt<UExpression>(defaultValue, this)
     }
 }

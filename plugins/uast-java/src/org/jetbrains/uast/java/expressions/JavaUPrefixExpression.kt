@@ -32,7 +32,7 @@ class JavaUPrefixExpression(
     override val operatorIdentifier: UIdentifier?
         get() = UIdentifier(psi.operationSign, this)
 
-    override fun resolve() = null
+    override fun resolveOperator() = null
 
     override val operator = when (psi.operationTokenType) {
         JavaTokenType.PLUS -> UastPrefixOperator.UNARY_PLUS

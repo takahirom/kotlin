@@ -15,12 +15,7 @@ interface UAnnotation : UElement, PsiAnnotation, PsiElementBacked {
     
     override fun getOriginalElement() = psi.originalElement
 
-    /**
-     * Returns the plugin for a language in which this annotation is written.
-     */
-    val languagePlugin: UastLanguagePlugin
-
-    override fun logString() = "UAnnotation"
+    override fun asLogString() = "UAnnotation"
 
     override fun accept(visitor: UastVisitor) {
         if (visitor.visitAnnotation(this)) return

@@ -21,7 +21,7 @@ import org.jetbrains.uast.visitor.UastVisitor
 /**
  * Represents a binary expression (value1 op value2), eg. `2 + "A"`.
  */
-interface UBinaryExpression : UExpression, UResolvable {
+interface UBinaryExpression : UExpression {
     /**
      * Returns the left operand.
      */
@@ -47,7 +47,7 @@ interface UBinaryExpression : UExpression, UResolvable {
      * 
      * @return the resolved method, or null if the method can't be resolved, or if the expression is not a method call.
      */
-    override fun resolve(): PsiMethod?
+    fun resolveOperator(): PsiMethod?
 
     override fun accept(visitor: UastVisitor) {
         if (visitor.visitBinaryExpression(this)) return
@@ -56,10 +56,10 @@ interface UBinaryExpression : UExpression, UResolvable {
         visitor.afterVisitBinaryExpression(this)
     }
 
-    override fun logString() =
+    override fun asLogString() =
             "UBinaryExpression (${operator.text})" + LINE_SEPARATOR +
-            leftOperand.logString().withMargin + LINE_SEPARATOR +
-            rightOperand.logString().withMargin
+            leftOperand.asLogString().withMargin + LINE_SEPARATOR +
+            rightOperand.asLogString().withMargin
 
-    override fun renderString() = leftOperand.renderString() + ' ' + operator.text + ' ' + rightOperand.renderString()
+    override fun asRenderString() = leftOperand.asRenderString() + ' ' + operator.text + ' ' + rightOperand.asRenderString()
 }

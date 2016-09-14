@@ -53,6 +53,6 @@ interface UObjectLiteralExpression : UCallExpression {
         visitor.afterVisitObjectLiteralExpression(this)
     }
 
-    override fun logString() = log("UObjectLiteralExpression", declaration)
-    override fun renderString() = "anonymous " + declaration.text
+    override fun asLogString() = log("UObjectLiteralExpression", declaration)
+    override fun asRenderString() = "anonymous " + declaration.text
 }

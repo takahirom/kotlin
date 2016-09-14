@@ -17,14 +17,16 @@
 package org.jetbrains.uast.kotlin
 
 import com.intellij.openapi.components.ServiceManager
+import com.intellij.openapi.util.Key
 import com.intellij.psi.PsiElement
+import com.intellij.psi.PsiPrimitiveType
 import com.intellij.psi.PsiType
 import com.intellij.psi.impl.cache.TypeInfo
 import com.intellij.psi.impl.compiled.ClsTypeElementImpl
 import com.intellij.psi.impl.compiled.SignatureParsing
 import com.intellij.psi.impl.compiled.StubBuildingVisitor
+import com.intellij.psi.search.GlobalSearchScope
 import com.intellij.psi.util.PsiTypesUtil
-import org.jetbrains.kotlin.KtNodeTypes
 import org.jetbrains.kotlin.asJava.toLightClass
 import org.jetbrains.kotlin.asJava.toLightElements
 import org.jetbrains.kotlin.codegen.signature.BothSignatureWriter
@@ -34,9 +36,13 @@ import org.jetbrains.kotlin.psi.*
 import org.jetbrains.kotlin.resolve.BindingContext
 import org.jetbrains.kotlin.resolve.DescriptorToSourceUtils
 import org.jetbrains.kotlin.resolve.calls.callUtil.getResolvedCall
+import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 import org.jetbrains.kotlin.types.KotlinType
 import org.jetbrains.uast.*
+import java.lang.ref.WeakReference
 import java.text.StringCharacterIterator
+
+internal val KOTLIN_CACHED_UELEMENT_KEY = Key.create<WeakReference<UElement>>("cached-kotlin-uelement")
 
 @Suppress("NOTHING_TO_INLINE")
 internal inline fun String?.orAnonymous(kind: String = ""): String {
@@ -44,7 +50,7 @@ internal inline fun String?.orAnonymous(kind: String = ""): String {
 }
 
 internal tailrec fun UElement.getLanguagePlugin(): UastLanguagePlugin {
-    return if (this is UDeclaration) languagePlugin else containingElement!!.getLanguagePlugin()
+    return if (this is UDeclaration) getLanguagePlugin() else containingElement!!.getLanguagePlugin()
 }
 
 internal fun DeclarationDescriptor.toSource() = try {
@@ -57,21 +63,39 @@ internal fun <T> lz(initializer: () -> T) = lazy(LazyThreadSafetyMode.NONE, init
 
 internal fun KotlinType.toPsiType(source: UElement, element: KtElement, boxed: Boolean): PsiType {
     if (this.isError) return UastErrorType
-    
+
+    if (arguments.isEmpty()) {
+        val typeFqName = this.constructor.declarationDescriptor?.fqNameSafe?.asString()
+        fun PsiPrimitiveType.orBoxed() = if (boxed) getBoxedType(element) else this
+        val psiType = when (typeFqName) {
+            "kotlin.Int" -> PsiType.INT.orBoxed()
+            "kotlin.Long" -> PsiType.LONG.orBoxed()
+            "kotlin.Short" -> PsiType.SHORT.orBoxed()
+            "kotlin.Boolean" -> PsiType.BOOLEAN.orBoxed()
+            "kotlin.Byte" -> PsiType.BYTE.orBoxed()
+            "kotlin.Char" -> PsiType.CHAR.orBoxed()
+            "kotlin.Double" -> PsiType.DOUBLE.orBoxed()
+            "kotlin.Float" -> PsiType.FLOAT.orBoxed()
+            "kotlin.String" -> PsiType.getJavaLangString(element.manager, GlobalSearchScope.projectScope(element.project))
+            else -> null
+        }
+        if (psiType != null) return psiType
+    }
+
     val project = element.project
     val typeMapper = ServiceManager.getService(project, KotlinUastBindingContextProviderService::class.java)
             .getTypeMapper(element) ?: return UastErrorType
-    
+
     val signatureWriter = BothSignatureWriter(BothSignatureWriter.Mode.TYPE)
     val typeMappingMode = if (boxed) TypeMappingMode.GENERIC_ARGUMENT else TypeMappingMode.DEFAULT
     typeMapper.mapType(this, signatureWriter, typeMappingMode)
-    
+
     val signature = StringCharacterIterator(signatureWriter.toString())
-    
+
     val javaType = SignatureParsing.parseTypeString(signature, StubBuildingVisitor.GUESSING_MAPPER)
     val typeInfo = TypeInfo.fromString(javaType, false)
     val typeText = TypeInfo.createTypeText(typeInfo) ?: return UastErrorType
-    
+
     return ClsTypeElementImpl(source.getParentOfType<UDeclaration>(false)?.psi ?: element, typeText, '\u0000').type
 }
 
@@ -90,7 +114,7 @@ internal fun PsiElement.getMaybeLightElement(context: UElement): PsiElement? {
         is KtVariableDeclaration -> {
             val lightElement = toLightElements().firstOrNull()
             if (lightElement != null) return lightElement
-            
+
             val languagePlugin = context.getLanguagePlugin()
             val uElement = languagePlugin.convertElementWithParent(this, null)
             when (uElement) {
@@ -113,12 +137,8 @@ internal fun KtElement.resolveCallToDeclaration(
         val resolvedCall = getResolvedCall(analyze()) ?: return null
         resolvedCall.resultingDescriptor
     }
-    
-    return descriptor.toSource()?.getMaybeLightElement(context)
-}
 
-internal fun KtExpression?.isNullExpression(): Boolean {
-    return this?.unwrapBlockOrParenthesis()?.node?.elementType == KtNodeTypes.NULL
+    return descriptor.toSource()?.getMaybeLightElement(context)
 }
 
 internal fun KtExpression.unwrapBlockOrParenthesis(): KtExpression {
@@ -133,4 +153,10 @@ internal fun KtExpression.unwrapBlockOrParenthesis(): KtExpression {
 internal fun KtElement.analyze(): BindingContext {
     return ServiceManager.getService(project, KotlinUastBindingContextProviderService::class.java)
             ?.getBindingContext(this) ?: BindingContext.EMPTY
+}
+
+internal inline fun <reified T : UDeclaration, reified P : PsiElement> unwrap(element: P): P {
+    val unwrapped = if (element is T) element.psi else element
+    assert(unwrapped !is UElement)
+    return unwrapped as P
 }

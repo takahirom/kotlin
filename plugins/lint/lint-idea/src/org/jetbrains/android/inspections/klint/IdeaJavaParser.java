@@ -35,7 +35,6 @@ import com.intellij.psi.util.InheritanceUtil;
 import lombok.ast.Node;
 import lombok.ast.Position;
 import org.jetbrains.uast.UastContext;
-import org.jetbrains.uast.UastContextImpl;
 import org.jetbrains.uast.UastLanguagePlugin;
 import org.jetbrains.uast.java.JavaUastLanguagePlugin;
 import org.jetbrains.uast.kotlin.KotlinUastLanguagePlugin;
@@ -58,7 +57,7 @@ public class IdeaJavaParser extends JavaParser {
         List<UastLanguagePlugin> languagePlugins = new ArrayList<UastLanguagePlugin>();
         languagePlugins.add(new JavaUastLanguagePlugin());
         languagePlugins.add(new KotlinUastLanguagePlugin());
-        myContext = new UastContextImpl(languagePlugins);
+        myContext = new UastContext(languagePlugins);
     }
 
     @Override

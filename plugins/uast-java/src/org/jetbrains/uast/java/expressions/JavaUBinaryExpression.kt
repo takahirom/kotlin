@@ -32,5 +32,5 @@ class JavaUBinaryExpression(
     override val operatorIdentifier: UIdentifier
         get() = UIdentifier(psi.operationSign, this)
 
-    override fun resolve() = null
+    override fun resolveOperator() = null
 }

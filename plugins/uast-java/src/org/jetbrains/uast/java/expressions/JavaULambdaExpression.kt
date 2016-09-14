@@ -28,8 +28,7 @@ class JavaULambdaExpression(
         override val containingElement: UElement?
 ) : JavaAbstractUExpression(), ULambdaExpression, PsiElementBacked {
     override val valueParameters by lz {
-        val languagePlugin = getLanguagePlugin()
-        psi.parameterList.parameters.map { JavaUParameter(it, languagePlugin, this) }
+        psi.parameterList.parameters.map { JavaUParameter(it, this) }
     }
 
     override val body by lz {

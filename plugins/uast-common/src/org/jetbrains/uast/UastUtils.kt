@@ -2,11 +2,15 @@
 @file:JvmName("UastUtils")
 package org.jetbrains.uast
 
+import com.intellij.openapi.components.ServiceManager
+import com.intellij.openapi.vfs.VfsUtilCore
 import com.intellij.psi.PsiClass
 import com.intellij.psi.PsiElement
 import com.intellij.psi.PsiNamedElement
 import com.intellij.psi.util.PsiTreeUtil
 import org.jetbrains.uast.expressions.UReferenceExpression
+import org.jetbrains.uast.psi.PsiElementBacked
+import java.io.File
 
 inline fun <reified T : UElement> UElement.getParentOfType(strict: Boolean = true): T? = getParentOfType(T::class.java, strict)
 
@@ -96,3 +100,36 @@ fun UElement.tryResolveUDeclaration(context: UastContext): UDeclaration? {
 }
 
 fun UReferenceExpression?.getQualifiedName() = (this?.resolve() as? PsiClass)?.qualifiedName
+
+/**
+ * Returns the String expression value, or null if the value can't be calculated or if the calculated value is not a String.
+ */
+fun UExpression.evaluateString(): String? = evaluate() as? String
+
+/**
+ * Get a physical [File] for this file, or null if there is no such file on disk.
+ */
+fun UFile.getIoFile(): File? = psi.virtualFile?.let { VfsUtilCore.virtualToIoFile(it) }
+
+tailrec fun UElement.getUastContext(): UastContext {
+    if (this is PsiElementBacked) {
+        val psi = this.psi
+        if (psi != null) {
+            return ServiceManager.getService(psi.project, UastContext::class.java) ?: error("UastContext not found")
+        }
+    }
+
+    return (containingElement ?: error("PsiElement should exist at least for UFile")).getUastContext()
+}
+
+tailrec fun UElement.getLanguagePlugin(): UastLanguagePlugin {
+    if (this is PsiElementBacked) {
+        val psi = this.psi
+        if (psi != null) {
+            val uastContext = ServiceManager.getService(psi.project, UastContext::class.java) ?: error("UastContext not found")
+            return uastContext.findPlugin(psi) ?: error("Language plugin was not found for $this (${this.javaClass.name})")
+        }
+    }
+
+    return (containingElement ?: error("PsiElement should exist at least for UFile")).getLanguagePlugin()
+}
