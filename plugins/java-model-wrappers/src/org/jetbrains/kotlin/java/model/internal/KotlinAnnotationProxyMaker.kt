@@ -29,7 +29,12 @@ import javax.lang.model.type.MirroredTypeException
 import javax.lang.model.type.MirroredTypesException
 import javax.lang.model.type.TypeMirror
 
-class KotlinAnnotationProxyMaker(val annotation: PsiAnnotation, val annotationClass: PsiClass, val annotationType: Class<out Annotation>) {
+class KotlinAnnotationProxyMaker(
+        val annotation: PsiAnnotation,
+        val annotationClass: PsiClass,
+        val annotationType: Class<out Annotation>,
+        private val registry: JeElementRegistry
+) {
     fun generate(): Annotation {
         return AnnotationParser.annotationForMap(annotationType, getAllValuesForParser(getAllPsiValues()))
     }
@@ -58,7 +63,7 @@ class KotlinAnnotationProxyMaker(val annotation: PsiAnnotation, val annotationCl
         val evaluator = JavaPsiFacade.getInstance(annotation.project).constantEvaluationHelper
         for ((method, value, jMethod) in values) {
             val jReturnType = jMethod.returnType ?: unexpectedType("no return type for ${jMethod.name}")
-            parserValues.put(method.name, getConstantValue(value, method.returnType!!, jReturnType, evaluator))
+            parserValues.put(method.name, getConstantValue(value, method.returnType!!, jReturnType, evaluator, registry))
         }
         return parserValues
     }
@@ -70,7 +75,8 @@ private fun getConstantValue(
         psiValue: PsiAnnotationMemberValue,
         returnType: PsiType,
         jReturnType: Class<*>,
-        evaluator: PsiConstantEvaluationHelper
+        evaluator: PsiConstantEvaluationHelper,
+        registry: JeElementRegistry
 ): Any? {
     val manager = psiValue.manager
     
@@ -81,7 +87,7 @@ private fun getConstantValue(
             if (psiValue !is PsiAnnotation) error("psiValue is not a PsiAnnotation")
             val annotationClass = PsiTypesUtil.getPsiClass(returnType) ?: error("Can't resolve type $returnType")
             @Suppress("UNCHECKED_CAST")
-            val annotation = KotlinAnnotationProxyMaker(psiValue, annotationClass, jReturnType as Class<out Annotation>)
+            val annotation = KotlinAnnotationProxyMaker(psiValue, annotationClass, jReturnType as Class<out Annotation>, registry)
             return jReturnType.cast(annotation.generate())
         }
         jReturnType.isArray -> {
@@ -96,12 +102,12 @@ private fun getConstantValue(
             if (jComponentType.isPrimitive || jComponentType.isAnnotation || jComponentType.canonicalName == JAVA_LANG_STRING) {
                 val arr = Array.newInstance(jComponentType, arrayValues.size)
                 arrayValues.forEachIndexed { i, componentPsiValue ->
-                    val componentValue = getConstantValue(componentPsiValue, returnType.componentType, jComponentType, evaluator)
+                    val componentValue = getConstantValue(componentPsiValue, returnType.componentType, jComponentType, evaluator, registry)
                     try { Array.set(arr, i, componentValue) } catch (e: IllegalArgumentException) { return null }
                 }
                 return arr
             } else {
-                val typeMirrors = arrayValues.map { getObjectType(it).toJeType(manager) }
+                val typeMirrors = arrayValues.map { getObjectType(it).toJeType(manager, registry) }
                 return MirroredTypesExceptionProxy(Collections.unmodifiableList(typeMirrors))
             }
         }
@@ -111,7 +117,7 @@ private fun getConstantValue(
             return AnnotationUtil.createEnumValue(jReturnType, enumConstant.name)
         }
         else -> return if (returnType is PsiClassType) {
-            val type = getObjectType(psiValue).toJeType(manager)
+            val type = getObjectType(psiValue).toJeType(manager, registry)
             MirroredTypeExceptionProxy(type)
         } else {
             castPrimitiveValue(returnType, (psiValue as? PsiExpression)?.calcConstantValue(evaluator))

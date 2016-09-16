@@ -47,4 +47,6 @@ class JePrimitiveType(override val psiType: PsiPrimitiveType) : JePsiType(), Pri
     }
 
     override fun hashCode() = psiType.hashCode()
+
+    override fun dispose() {}
 }

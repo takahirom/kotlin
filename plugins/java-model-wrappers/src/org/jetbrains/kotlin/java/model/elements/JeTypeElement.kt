@@ -23,16 +23,20 @@ import com.intellij.psi.util.PsiTypesUtil
 import org.jetbrains.kotlin.asJava.elements.LightParameter
 import org.jetbrains.kotlin.java.model.*
 import org.jetbrains.kotlin.java.model.internal.DefaultConstructorPsiMethod
+import org.jetbrains.kotlin.java.model.internal.JeElementRegistry
 import org.jetbrains.kotlin.java.model.types.JeNoneType
 import org.jetbrains.kotlin.java.model.types.toJeType
 import javax.lang.model.element.*
 import javax.lang.model.type.TypeMirror
 
-class JeTypeElement(override val psi: PsiClass) : JeElement, TypeElement, JeAnnotationOwner, JeModifierListOwner {
+class JeTypeElement(
+        psi: PsiClass,
+        registry: JeElementRegistry
+) : AbstractJeElement<PsiClass>(psi, registry), TypeElement, JeAnnotationOwner, JeModifierListOwner {
     override fun getEnclosingElement(): Element? {
-        psi.containingClass?.let { return JeTypeElement(it) }
+        psi.containingClass?.let { return JeTypeElement(it, registry) }
         val javaFile = psi.containingFile as? PsiJavaFile ?: return null
-        return JavaPsiFacade.getInstance(psi.project).findPackage(javaFile.packageName)?.let(::JePackageElement)
+        return JavaPsiFacade.getInstance(psi.project).findPackage(javaFile.packageName)?.let { JePackageElement(it, registry) }
     }
     
     override fun getSimpleName() = JeName(psi.name)
@@ -47,7 +51,7 @@ class JeTypeElement(override val psi: PsiClass) : JeElement, TypeElement, JeAnno
     override fun getSuperclass(): TypeMirror {
         val superClass = psi.superClass ?: return JeNoneType
         val psiType = getSuperType(psi.superTypes, superClass)
-        return psiType.toJeType(psi.manager)
+        return psiType.toJeType(psi.manager, registry)
     }
 
     override fun getInterfaces(): List<TypeMirror> {
@@ -56,13 +60,13 @@ class JeTypeElement(override val psi: PsiClass) : JeElement, TypeElement, JeAnno
         
         for (intf in psi.interfaces) {
             val psiType = getSuperType(superTypes, intf)
-            interfaces += psiType.toJeType(psi.manager)
+            interfaces += psiType.toJeType(psi.manager, registry)
         }
         
         return interfaces
     }
 
-    override fun getTypeParameters() = psi.typeParameters.map { JeTypeParameterElement(it, this) }
+    override fun getTypeParameters() = psi.typeParameters.map { JeTypeParameterElement(it, registry, this) }
 
     override fun getNestingKind() = when {
         ClassUtil.isTopLevelClass(psi) -> NestingKind.TOP_LEVEL
@@ -73,10 +77,10 @@ class JeTypeElement(override val psi: PsiClass) : JeElement, TypeElement, JeAnno
 
     override fun getEnclosedElements(): List<JeElement> {
         val declarations = mutableListOf<JeElement>()
-        psi.initializers.forEach { declarations += JeClassInitializerExecutableElement(it) }
-        psi.fields.forEach { declarations += JeVariableElement(it) }
-        psi.methods.forEach { declarations += JeMethodExecutableElement(it) }
-        psi.innerClasses.forEach { declarations += JeTypeElement(it) }
+        psi.initializers.forEach { declarations += JeClassInitializerExecutableElement(it, registry) }
+        psi.fields.forEach { declarations += JeVariableElement(it, registry) }
+        psi.methods.forEach { declarations += JeMethodExecutableElement(it, registry) }
+        psi.innerClasses.forEach { declarations += JeTypeElement(it, registry) }
         
         // Add default constructor if possible
         if (!psi.isInterface && !psi.isAnnotationType && psi.constructors.isEmpty()) {
@@ -96,7 +100,7 @@ class JeTypeElement(override val psi: PsiClass) : JeElement, TypeElement, JeAnno
                     if (containingClass != null && !psi.hasModifierProperty(PsiModifier.STATIC)) {
                         addParameter(LightParameter("\$instance", PsiTypesUtil.getClassType(containingClass), this, psi.language))
                     }
-                })
+                }, registry)
             }
         }
         
@@ -108,13 +112,13 @@ class JeTypeElement(override val psi: PsiClass) : JeElement, TypeElement, JeAnno
     
     fun getAllMembers(): List<Element> {
         val declarations = mutableListOf<Element>()
-        psi.allFields.forEach { declarations += JeVariableElement(it) }
+        psi.allFields.forEach { declarations += JeVariableElement(it, registry) }
         psi.allMethods.forEach {
             if (it.isConstructor && it.containingClass != this@JeTypeElement.psi) return@forEach
-            declarations += JeMethodExecutableElement(it) 
+            declarations += JeMethodExecutableElement(it, registry)
         }
-        psi.allInnerClasses.forEach { declarations += JeTypeElement(it) }
-        psi.initializers.forEach { declarations += JeClassInitializerExecutableElement(it) }
+        psi.allInnerClasses.forEach { declarations += JeTypeElement(it, registry) }
+        psi.initializers.forEach { declarations += JeClassInitializerExecutableElement(it, registry) }
         return declarations
     }
 
@@ -125,7 +129,7 @@ class JeTypeElement(override val psi: PsiClass) : JeElement, TypeElement, JeAnno
         else -> ElementKind.CLASS
     }
 
-    override fun asType() = PsiTypesUtil.getClassType(psi).toJeType(psi.manager)
+    override fun asType() = PsiTypesUtil.getClassType(psi).toJeType(psi.manager, registry)
 
     override fun <R : Any?, P : Any?> accept(v: ElementVisitor<R, P>, p: P) = v.visitType(this, p)
     

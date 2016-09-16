@@ -33,6 +33,7 @@ import org.jetbrains.kotlin.descriptors.ModuleDescriptor
 import org.jetbrains.kotlin.fileClasses.NoResolveFileClassesProvider
 import org.jetbrains.kotlin.incremental.components.SourceRetentionAnnotationHandler
 import org.jetbrains.kotlin.java.model.elements.JeTypeElement
+import org.jetbrains.kotlin.java.model.internal.JeElementRegistry
 import org.jetbrains.kotlin.load.java.JvmAbi
 import org.jetbrains.kotlin.psi.KtFile
 import org.jetbrains.kotlin.resolve.BindingTrace
@@ -119,22 +120,28 @@ abstract class AbstractAnnotationProcessingExtension(
         val options = emptyMap<String, String>()
         log { "Options: $options" }
 
+        val registry = JeElementRegistry()
+
         val filer = KotlinFiler(generatedSourcesOutputDir, classesOutputDir)
-        val types = KotlinTypes(javaPsiFacade, PsiManager.getInstance(project), projectScope)
-        val elements = KotlinElements(javaPsiFacade, projectScope)
+        val types = KotlinTypes(javaPsiFacade, PsiManager.getInstance(project), projectScope, registry)
+        val elements = KotlinElements(javaPsiFacade, projectScope, registry)
 
         val processingEnvironment = KotlinProcessingEnvironment(
                 elements, types, messager, options, filer, processors,
-                project, psiManager, javaPsiFacade, projectScope, bindingTrace.bindingContext, appendJavaSourceRootsHandler)
+                project, psiManager, javaPsiFacade, projectScope, bindingTrace.bindingContext,
+                registry, appendJavaSourceRootsHandler)
 
-        val processingResult = processingEnvironment.doAnnotationProcessing(files)
-        processingEnvironment.dispose()
+        val processingResult = try {
+            processingEnvironment.doAnnotationProcessing(files)
+        } finally {
+            processingEnvironment.dispose() // registry is disposed inside ProcessingEnvironment
+        }
 
         annotationProcessingComplete = true
         log {
-            "Annotation processing complete, " + 
-                    processingResult.errorCount.count("error") + ", " + 
-                    processingResult.warningCount.count("warning")
+            "Annotation processing complete, " +
+            processingResult.errorCount.count("error") + ", " +
+            processingResult.warningCount.count("warning")
         }
 
         if (processingResult.errorCount != 0) {
@@ -146,7 +153,7 @@ abstract class AbstractAnnotationProcessingExtension(
             // Do not restart Kotlin file analysis
             return null
         }
-        
+
         if (!processingResult.wasAnythingGenerated) {
             // Nothing was generated, do not need to restart analysis
             return null
@@ -235,12 +242,12 @@ abstract class AbstractAnnotationProcessingExtension(
         }
         
         val finalRoundNumber = run annotationProcessing@ {
-            val firstRoundEnvironment = KotlinRoundEnvironment(firstRoundAnnotations, false, 1)
+            val firstRoundEnvironment = KotlinRoundEnvironment(firstRoundAnnotations, registry(), false, 1)
             process(firstRoundEnvironment) // Dispose for firstRoundEnvironment is called inside process
         } + 1
         
         log { "Starting round $finalRoundNumber (final)" }
-        val finalRoundEnvironment = KotlinRoundEnvironment(firstRoundAnnotations.copy(), true, finalRoundNumber)
+        val finalRoundEnvironment = KotlinRoundEnvironment(firstRoundAnnotations.copy(), registry(), true, finalRoundNumber)
         for (processor in processors()) {
             processor.process(emptySet(), finalRoundEnvironment)
         }
@@ -277,7 +284,7 @@ abstract class AbstractAnnotationProcessingExtension(
         
         // Start the next round
         val nextRoundAnnotations = roundEnvironment.roundAnnotations().copy().apply { analyzeFiles(psiFiles) }
-        val nextRoundEnvironment = KotlinRoundEnvironment(nextRoundAnnotations, false, roundEnvironment.roundNumber + 1)
+        val nextRoundEnvironment = KotlinRoundEnvironment(nextRoundAnnotations, registry(), false, roundEnvironment.roundNumber + 1)
         roundEnvironment.dispose()
         return process(nextRoundEnvironment)
     }
@@ -303,7 +310,7 @@ abstract class AbstractAnnotationProcessingExtension(
             }
 
             val applicableAnnotations = applicableAnnotationNames
-                    .map { javaPsiFacade().findClass(it, projectScope())?.let { JeTypeElement(it) } }
+                    .map { javaPsiFacade().findClass(it, projectScope())?.let { JeTypeElement(it, registry()) } }
                     .filterNotNullTo(hashSetOf())
 
             log {

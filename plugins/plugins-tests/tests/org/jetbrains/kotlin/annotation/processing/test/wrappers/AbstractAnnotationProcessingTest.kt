@@ -22,6 +22,7 @@ import com.intellij.psi.search.GlobalSearchScope
 import org.jetbrains.kotlin.codegen.AbstractBytecodeTextTest
 import org.jetbrains.kotlin.codegen.CodegenTestUtil
 import org.jetbrains.kotlin.java.model.elements.DefaultJeElementRenderer
+import org.jetbrains.kotlin.java.model.internal.JeElementRegistry
 import org.jetbrains.kotlin.java.model.toJeElement
 import org.jetbrains.kotlin.test.ConfigurationKind
 import org.jetbrains.kotlin.test.KotlinTestUtils
@@ -49,7 +50,13 @@ abstract class AbstractAnnotationProcessingTest : AbstractBytecodeTextTest() {
         val psiClass = JavaPsiFacade.getInstance(project).findClass(fqName, GlobalSearchScope.projectScope(project))!!
 
         val modelFile = File(wholeFile.parent, wholeFile.nameWithoutExtension + ".txt")
-        val jeElement = psiClass.toJeElement() ?: error("JeElement is null")
-        KotlinTestUtils.assertEqualsToFile(modelFile, RENDERER.render(jeElement))
+        val registry = JeElementRegistry()
+        try {
+            val jeElement = psiClass.toJeElement(registry) ?: error("JeElement is null")
+            KotlinTestUtils.assertEqualsToFile(modelFile, RENDERER.render(jeElement))
+        }
+        finally {
+            registry.dispose()
+        }
     }
 }

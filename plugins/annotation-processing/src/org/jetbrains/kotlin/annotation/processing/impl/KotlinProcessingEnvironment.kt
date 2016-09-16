@@ -21,6 +21,7 @@ import com.intellij.openapi.project.Project
 import com.intellij.psi.JavaPsiFacade
 import com.intellij.psi.PsiManager
 import com.intellij.psi.search.GlobalSearchScope
+import org.jetbrains.kotlin.java.model.internal.JeElementRegistry
 import org.jetbrains.kotlin.resolve.BindingContext
 import java.io.File
 import java.util.*
@@ -34,14 +35,16 @@ class KotlinProcessingEnvironment(
         messager: KotlinMessager,
         options: Map<String, String>,
         filer: KotlinFiler,
-        
+
         processors: List<Processor>,
-        
+
         project: Project,
         psiManager: PsiManager,
         javaPsiFacade: JavaPsiFacade,
         projectScope: GlobalSearchScope,
         bindingContext: BindingContext,
+
+        registry: JeElementRegistry,
         appendJavaSourceRootsHandler: (List<File>) -> Unit
 ) : ProcessingEnvironment, Disposable {
     private val elements = elements.toDisposable()
@@ -55,16 +58,18 @@ class KotlinProcessingEnvironment(
     internal val javaPsiFacade = javaPsiFacade.toDisposable()
     internal val projectScope = projectScope.toDisposable()
     internal val bindingContext = bindingContext.toDisposable()
-    
+
+    internal val registry = registry.toDisposable()
     internal val appendJavaSourceRootsHandler = appendJavaSourceRootsHandler.toDisposable()
     private val options = Collections.unmodifiableMap(options).toDisposable()
 
     override fun dispose() {
-        types.dispose()
-        elements.dispose()
+        types().dispose()
+        elements().dispose()
+        registry().dispose()
         dispose(elements, types, messager, filer, processors,
                 project, psiManager, javaPsiFacade, projectScope, bindingContext,
-                appendJavaSourceRootsHandler, options)
+                registry, appendJavaSourceRootsHandler, options)
     }
 
     override fun getElementUtils() = elements()

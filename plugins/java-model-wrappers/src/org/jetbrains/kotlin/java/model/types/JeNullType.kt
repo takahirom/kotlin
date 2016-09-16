@@ -24,4 +24,5 @@ object JeNullType : JeTypeMirror, NullType {
     override fun getKind() = TypeKind.NULL
     override fun <R : Any?, P : Any?> accept(v: TypeVisitor<R, P>, p: P) = v.visitNull(this, p)
     override fun toString() = "null"
+    override fun dispose() {}
 }

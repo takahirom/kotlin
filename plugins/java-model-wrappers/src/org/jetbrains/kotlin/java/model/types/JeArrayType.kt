@@ -18,18 +18,35 @@ package org.jetbrains.kotlin.java.model.types
 
 import com.intellij.psi.PsiArrayType
 import com.intellij.psi.PsiManager
+import org.jetbrains.kotlin.annotation.processing.impl.dispose
+import org.jetbrains.kotlin.annotation.processing.impl.toDisposable
+import org.jetbrains.kotlin.java.model.internal.JeElementRegistry
 import javax.lang.model.type.ArrayType
 import javax.lang.model.type.TypeKind
+import javax.lang.model.type.TypeMirror
 import javax.lang.model.type.TypeVisitor
 
 class JeArrayType(
-        override val psiType: PsiArrayType, 
-        override val psiManager: PsiManager,
-        private val isRaw: Boolean
+        psiType: PsiArrayType,
+        psiManager: PsiManager,
+        private val isRaw: Boolean,
+        private val registry: JeElementRegistry
 ) : JePsiType(), JeTypeWithManager, ArrayType {
+    init { registry.register(this) }
+
+    private val disposablePsiType = psiType.toDisposable()
+    private val disposablePsiManager = psiManager.toDisposable()
+
+    override val psiManager: PsiManager
+        get() = disposablePsiManager()
+    override val psiType: PsiArrayType
+        get() = disposablePsiType()
+
+    override fun dispose() = dispose(disposablePsiManager, disposablePsiType)
+
     override fun getKind() = TypeKind.ARRAY
     override fun <R : Any?, P : Any?> accept(v: TypeVisitor<R, P>, p: P) = v.visitArray(this, p)
-    override fun getComponentType() = psiType.componentType.toJeType(psiManager, isRaw = isRaw)
+    override fun getComponentType(): TypeMirror = psiType.componentType.toJeType(psiManager, registry, isRaw = isRaw)
     
     override fun toString() = psiType.getCanonicalText(false)
 

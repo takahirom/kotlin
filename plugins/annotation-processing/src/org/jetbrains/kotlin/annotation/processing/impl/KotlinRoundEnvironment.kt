@@ -18,6 +18,7 @@ package org.jetbrains.kotlin.annotation.processing.impl
 
 import com.intellij.openapi.Disposable
 import org.jetbrains.kotlin.annotation.processing.RoundAnnotations
+import org.jetbrains.kotlin.java.model.internal.JeElementRegistry
 import org.jetbrains.kotlin.java.model.toJeElement
 import javax.annotation.processing.RoundEnvironment
 import javax.lang.model.element.Element
@@ -25,12 +26,14 @@ import javax.lang.model.element.TypeElement
 
 internal class KotlinRoundEnvironment(
         roundAnnotations: RoundAnnotations,
+        registry: JeElementRegistry,
         private val isProcessingOver: Boolean,
         internal val roundNumber: Int
 ) : RoundEnvironment, Disposable {
     val roundAnnotations = roundAnnotations.toDisposable()
+    private val registry = registry.toDisposable()
     
-    override fun dispose() = dispose(roundAnnotations)
+    override fun dispose() = dispose(roundAnnotations, registry)
     
     private var isError = false
     
@@ -42,7 +45,7 @@ internal class KotlinRoundEnvironment(
         val declarations = roundAnnotations().annotationsMap[fqName] ?: return emptySet()
         return hashSetOf<Element>().apply {
             for (declaration in declarations) {
-                declaration.toJeElement()?.let { add(it) }
+                declaration.toJeElement(registry())?.let { add(it) }
             }
         }
     }

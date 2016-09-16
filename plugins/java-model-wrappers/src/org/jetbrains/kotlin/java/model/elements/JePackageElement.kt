@@ -17,16 +17,17 @@
 package org.jetbrains.kotlin.java.model.elements
 
 import com.intellij.psi.PsiPackage
-import org.jetbrains.kotlin.java.model.JeElement
-import org.jetbrains.kotlin.java.model.JeModifierListOwner
-import org.jetbrains.kotlin.java.model.JeName
-import org.jetbrains.kotlin.java.model.JeNoAnnotations
+import org.jetbrains.kotlin.java.model.*
+import org.jetbrains.kotlin.java.model.internal.JeElementRegistry
 import org.jetbrains.kotlin.java.model.types.JePackageTypeMirror
 import javax.lang.model.element.ElementKind
 import javax.lang.model.element.ElementVisitor
 import javax.lang.model.element.PackageElement
 
-class JePackageElement(override val psi: PsiPackage) : JeElement, PackageElement, JeModifierListOwner, JeNoAnnotations {
+class JePackageElement(
+        psi: PsiPackage,
+        registry: JeElementRegistry
+) : AbstractJeElement<PsiPackage>(psi, registry), PackageElement, JeModifierListOwner, JeNoAnnotations {
     override fun getEnclosingElement() = null
 
     override fun getSimpleName() = JeName(psi.name)
@@ -39,7 +40,7 @@ class JePackageElement(override val psi: PsiPackage) : JeElement, PackageElement
 
     override fun getQualifiedName() = JeName(psi.qualifiedName)
 
-    override fun getEnclosedElements() = psi.classes.map(::JeTypeElement)
+    override fun getEnclosedElements() = psi.classes.map { JeTypeElement(it, registry) }
 
     override fun asType() = JePackageTypeMirror
     

@@ -16,9 +16,30 @@
 
 package org.jetbrains.kotlin.java.model
 
+import com.intellij.openapi.Disposable
 import com.intellij.psi.PsiElement
+import org.jetbrains.kotlin.annotation.processing.impl.toDisposable
+import org.jetbrains.kotlin.annotation.processing.impl.dispose
+import org.jetbrains.kotlin.java.model.internal.JeElementRegistry
 import javax.lang.model.element.Element
 
-interface JeElement : Element {
+interface JeElement : Element, Disposable {
     val psi: PsiElement
+}
+
+abstract class AbstractJeElement<out T : PsiElement>(
+        psi: T,
+        val registry: JeElementRegistry
+) : JeElement {
+    init {
+        @Suppress("LeakingThis")
+        registry.register(this)
+    }
+
+    private val disposablePsi = psi.toDisposable()
+
+    override fun dispose() = dispose(disposablePsi)
+
+    override val psi: T
+        get() = disposablePsi()
 }

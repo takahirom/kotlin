@@ -18,20 +18,34 @@ package org.jetbrains.kotlin.java.model.types
 
 import com.intellij.psi.PsiCapturedWildcardType
 import com.intellij.psi.PsiManager
+import com.intellij.psi.PsiType
 import com.intellij.psi.PsiWildcardType
+import org.jetbrains.kotlin.annotation.processing.impl.toDisposable
+import org.jetbrains.kotlin.annotation.processing.impl.dispose
+import org.jetbrains.kotlin.java.model.internal.JeElementRegistry
 import javax.lang.model.type.TypeKind
 import javax.lang.model.type.TypeVisitor
 import javax.lang.model.type.WildcardType
 
 class JeWildcardType(
-        override val psiType: PsiWildcardType, 
-        private val isRaw: Boolean
+        psiType: PsiWildcardType,
+        private val isRaw: Boolean,
+        private val registry: JeElementRegistry
 ) : JePsiType(), JeTypeWithManager, WildcardType {
+    init { registry.register(this) }
+
+    private val disposablePsiType = psiType.toDisposable()
+
+    override fun dispose() = dispose(disposablePsiType)
+
+    override val psiType: PsiWildcardType
+        get() = disposablePsiType()
+
     override fun getKind() = TypeKind.WILDCARD
     override fun <R : Any?, P : Any?> accept(v: TypeVisitor<R, P>, p: P) = v.visitWildcard(this, p)
     
-    override fun getSuperBound() = psiType.superBound.toJeType(psiManager, isRaw = isRaw)
-    override fun getExtendsBound() = psiType.extendsBound.toJeType(psiManager, isRaw = isRaw)
+    override fun getSuperBound() = psiType.superBound.toJeType(psiManager, registry, isRaw = isRaw)
+    override fun getExtendsBound() = psiType.extendsBound.toJeType(psiManager, registry, isRaw = isRaw)
 
     override val psiManager: PsiManager
         get() = psiType.manager
@@ -61,15 +75,29 @@ class JeWildcardType(
 }
 
 class JeCapturedWildcardType(
-        override val psiType: PsiCapturedWildcardType, 
-        override val psiManager: PsiManager,
-        private val isRaw: Boolean
+        psiType: PsiCapturedWildcardType,
+        psiManager: PsiManager,
+        private val isRaw: Boolean,
+        private val registry: JeElementRegistry
 ) : JePsiType(), JeTypeWithManager, WildcardType {
+    init { registry.register(this) }
+
+    private val disposablePsiType = psiType.toDisposable()
+    private val disposablePsiManager = psiManager.toDisposable()
+
+    override fun dispose() = dispose(disposablePsiType, disposablePsiManager)
+
+    override val psiType: PsiCapturedWildcardType
+        get() = disposablePsiType()
+
+    override val psiManager: PsiManager
+        get() = disposablePsiManager()
+
     override fun getKind() = TypeKind.WILDCARD
     override fun <R : Any?, P : Any?> accept(v: TypeVisitor<R, P>, p: P) = v.visitWildcard(this, p)
 
-    override fun getSuperBound() = psiType.lowerBound.toJeType(psiManager, isRaw = isRaw)
-    override fun getExtendsBound() = psiType.upperBound.toJeType(psiManager, isRaw = isRaw)
+    override fun getSuperBound() = psiType.lowerBound.toJeType(psiManager, registry, isRaw = isRaw)
+    override fun getExtendsBound() = psiType.upperBound.toJeType(psiManager, registry, isRaw = isRaw)
 
     override fun equals(other: Any?): Boolean {
         if (this === other) return true

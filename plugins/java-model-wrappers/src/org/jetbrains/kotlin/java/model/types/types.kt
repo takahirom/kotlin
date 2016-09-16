@@ -18,6 +18,7 @@
 package org.jetbrains.kotlin.java.model.types
 
 import com.intellij.psi.*
+import org.jetbrains.kotlin.java.model.internal.JeElementRegistry
 import javax.lang.model.type.TypeKind
 import javax.lang.model.type.TypeMirror
 import java.lang.reflect.Array as RArray
@@ -42,21 +43,21 @@ fun TypeKind?.toJePrimitiveType() = PSI_PRIMITIVES_MAP[TYPE_KIND_TO_PSI_PRIMITIV
 
 fun PsiType.toJePrimitiveType() = PSI_PRIMITIVES_MAP[this]
 
-fun PsiType.toJeType(manager: PsiManager, isRaw: Boolean = false): TypeMirror = when (this) {
+fun PsiType.toJeType(manager: PsiManager, registry: JeElementRegistry, isRaw: Boolean = false): TypeMirror = when (this) {
     PsiType.VOID -> JeVoidType
     PsiType.NULL -> JeNullType
     is PsiPrimitiveType -> PSI_PRIMITIVES_MAP[this] ?: JeErrorType
-    is PsiArrayType -> JeArrayType(this, manager, isRaw)
-    is PsiWildcardType -> JeWildcardType(this, isRaw)
-    is PsiCapturedWildcardType -> JeCapturedWildcardType(this, manager, isRaw)
+    is PsiArrayType -> JeArrayType(this, manager, isRaw, registry)
+    is PsiWildcardType -> JeWildcardType(this, isRaw, registry)
+    is PsiCapturedWildcardType -> JeCapturedWildcardType(this, manager, isRaw, registry)
     is PsiClassType -> {
         val resolvedClass = this.resolve()
         when (resolvedClass) {
-            is PsiTypeParameter -> JeTypeVariableType(this, resolvedClass)
-            is PsiClass -> JeDeclaredType(this, resolvedClass, isRaw = isRaw)
+            is PsiTypeParameter -> JeTypeVariableType(this, resolvedClass, registry)
+            is PsiClass -> JeDeclaredType(this, resolvedClass, registry, isRaw = isRaw)
             else -> JeErrorType
         }
     }
-    is PsiIntersectionType -> JeIntersectionType(this, manager, isRaw)
+    is PsiIntersectionType -> JeIntersectionType(this, manager, isRaw, registry)
     else -> JeErrorType
 }

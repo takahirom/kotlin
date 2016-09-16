@@ -21,7 +21,10 @@ import com.intellij.psi.*
 import com.intellij.psi.impl.light.LightClassReferenceExpression
 import com.intellij.psi.impl.source.PsiClassReferenceType
 import com.intellij.psi.util.PsiTypesUtil
+import org.jetbrains.kotlin.annotation.processing.impl.toDisposable
+import org.jetbrains.kotlin.annotation.processing.impl.dispose
 import org.jetbrains.kotlin.java.model.elements.JeTypeElement
+import org.jetbrains.kotlin.java.model.internal.JeElementRegistry
 import org.jetbrains.kotlin.java.model.internal.isStatic
 import javax.lang.model.type.DeclaredType
 import javax.lang.model.type.TypeKind
@@ -37,11 +40,25 @@ fun createDeclaredType(psiClass: PsiClass, typeArgs: List<PsiType>): PsiClassRef
 }
 
 class JeDeclaredType(
-        override val psiType: PsiClassType,
-        val psiClass: PsiClass,
+        psiType: PsiClassType,
+        psiClass: PsiClass,
+        private val registry: JeElementRegistry,
         val enclosingDeclaredType: DeclaredType? = null,
         val isRaw: Boolean = false
 ) : JePsiType(), JeTypeWithManager, DeclaredType {
+    init { registry.register(this) }
+
+    private val disposablePsiType = psiType.toDisposable()
+    private val disposablePsiClass = psiClass.toDisposable()
+
+    override fun dispose() = dispose(disposablePsiClass, disposablePsiType)
+
+    override val psiType: PsiClassType
+        get() = disposablePsiType()
+
+    val psiClass: PsiClass
+        get() = disposablePsiClass()
+
     override fun getKind() = TypeKind.DECLARED
     
     override fun <R : Any?, P : Any?> accept(v: TypeVisitor<R, P>, p: P) = v.visitDeclared(this, p)
@@ -51,20 +68,20 @@ class JeDeclaredType(
 
     override fun getTypeArguments(): List<TypeMirror> {
         return when (psiType) {
-            is PsiClassReferenceType -> psiType.parameters.map { it.toJeType(psiManager) }
+            is PsiClassReferenceType -> psiType.parameters.map { it.toJeType(psiManager, registry) }
             is PsiClassType -> {
                 if (isRaw) return emptyList()
                 
                 val substitutor = psiType.resolveGenerics().substitutor
-                val psiClass = psiType.resolve() ?: return psiType.parameters.map { it.toJeType(psiManager) }
+                val psiClass = psiType.resolve() ?: return psiType.parameters.map { it.toJeType(psiManager, registry) }
 
                 val args = mutableListOf<TypeMirror>()
                 for (typeParameter in psiClass.typeParameters) {
                     val substitutedParameter = substitutor.substitute(typeParameter)
                     if (substitutedParameter != null)
-                        args += substitutedParameter.toJeType(psiManager)
+                        args += substitutedParameter.toJeType(psiManager, registry)
                     else
-                        args += JeTypeVariableType(PsiTypesUtil.getClassType(typeParameter), typeParameter)
+                        args += JeTypeVariableType(PsiTypesUtil.getClassType(typeParameter), typeParameter, registry)
                 }
 
                 args
@@ -73,7 +90,7 @@ class JeDeclaredType(
         }
     }
 
-    override fun asElement() = JeTypeElement(psiClass)
+    override fun asElement() = JeTypeElement(psiClass, registry)
 
     override fun getEnclosingType(): TypeMirror {
         if (!psiClass.isStatic) return JeNoneType
@@ -81,7 +98,7 @@ class JeDeclaredType(
         if (enclosingDeclaredType != null) return enclosingDeclaredType
         
         val psiClass = psiClass.containingClass ?: return JeNoneType
-        return PsiTypesUtil.getClassType(psiClass).toJeType(psiManager)
+        return PsiTypesUtil.getClassType(psiClass).toJeType(psiManager, registry)
     }
 
     override fun equals(other: Any?): Boolean {

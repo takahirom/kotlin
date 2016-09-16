@@ -16,14 +16,10 @@
 
 package org.jetbrains.kotlin.java.model.elements
 
-import com.intellij.psi.PsiAnnotationOwner
-import com.intellij.psi.PsiModifierListOwner
 import com.intellij.psi.PsiTypeParameter
 import com.intellij.psi.util.PsiTypesUtil
-import org.jetbrains.kotlin.java.model.JeAnnotationOwner
-import org.jetbrains.kotlin.java.model.JeElement
-import org.jetbrains.kotlin.java.model.JeModifierListOwner
-import org.jetbrains.kotlin.java.model.JeName
+import org.jetbrains.kotlin.java.model.*
+import org.jetbrains.kotlin.java.model.internal.JeElementRegistry
 import org.jetbrains.kotlin.java.model.types.toJeType
 import javax.lang.model.element.Element
 import javax.lang.model.element.ElementKind
@@ -31,22 +27,23 @@ import javax.lang.model.element.ElementVisitor
 import javax.lang.model.element.TypeParameterElement
 
 class JeTypeParameterElement(
-        override val psi: PsiTypeParameter,
+        psi: PsiTypeParameter,
+        registry: JeElementRegistry,
         val parent: JeElement?
-) : JeElement, TypeParameterElement, JeAnnotationOwner, JeModifierListOwner {
+) : AbstractJeElement<PsiTypeParameter>(psi, registry), TypeParameterElement, JeAnnotationOwner, JeModifierListOwner {
     override fun getSimpleName() = JeName(psi.name)
 
     override fun getEnclosingElement() = parent
 
     override fun getKind() = ElementKind.TYPE_PARAMETER
 
-    override fun asType() = PsiTypesUtil.getClassType(psi).toJeType(psi.manager)
+    override fun asType() = PsiTypesUtil.getClassType(psi).toJeType(psi.manager, registry)
 
     override fun <R : Any?, P : Any?> accept(v: ElementVisitor<R, P>, p: P) = v.visitTypeParameter(this, p)
 
     override fun getEnclosedElements() = emptyList<Element>()
     
-    override fun getBounds() = psi.superTypes.map { it.toJeType(psi.manager) }
+    override fun getBounds() = psi.superTypes.map { it.toJeType(psi.manager, registry) }
 
     override fun getGenericElement() = parent
 

@@ -19,6 +19,7 @@ package org.jetbrains.kotlin.java.model.elements
 import com.intellij.psi.*
 import com.intellij.psi.util.PsiTypesUtil
 import org.jetbrains.kotlin.java.model.*
+import org.jetbrains.kotlin.java.model.internal.JeElementRegistry
 import org.jetbrains.kotlin.java.model.internal.isStatic
 import org.jetbrains.kotlin.java.model.types.JeMethodExecutableTypeMirror
 import org.jetbrains.kotlin.java.model.types.JeNoneType
@@ -26,29 +27,32 @@ import org.jetbrains.kotlin.java.model.types.toJeType
 import javax.lang.model.element.*
 import javax.lang.model.type.TypeMirror
 
-class JeMethodExecutableElement(override val psi: PsiMethod) : JeElement, ExecutableElement, JeModifierListOwner, JeAnnotationOwner {
-    override fun getEnclosingElement() = psi.containingClass?.let(::JeTypeElement)
+class JeMethodExecutableElement(
+        psi: PsiMethod,
+        registry: JeElementRegistry
+) : AbstractJeElement<PsiMethod>(psi, registry), ExecutableElement, JeModifierListOwner, JeAnnotationOwner {
+    override fun getEnclosingElement() = psi.containingClass?.let { JeTypeElement(it, registry) }
 
     override fun getSimpleName(): JeName {
         if (psi.isConstructor) return JeName.INIT
         return JeName(psi.name)
     }
 
-    override fun getThrownTypes() = psi.throwsList.referencedTypes.map { it.toJeType(psi.manager) }
+    override fun getThrownTypes() = psi.throwsList.referencedTypes.map { it.toJeType(psi.manager, registry) }
 
-    override fun getTypeParameters() = psi.typeParameters.map { JeTypeParameterElement(it, this) }
+    override fun getTypeParameters() = psi.typeParameters.map { JeTypeParameterElement(it, registry, this) }
 
-    override fun getParameters() = psi.parameterList.parameters.map(::JeVariableElement)
+    override fun getParameters() = psi.parameterList.parameters.map { JeVariableElement(it, registry) }
 
     override fun getDefaultValue(): AnnotationValue? {
         val annotationMethod = psi as? PsiAnnotationMethod ?: return null
         val defaultValue = annotationMethod.defaultValue ?: return null
-        return JeAnnotationValue(defaultValue)
+        return defaultValue.toJeAnnotationValue(registry)
     }
 
-    override fun getReturnType() = psi.returnType?.let { it.toJeType(psi.manager) } ?: JeNoneType
+    override fun getReturnType() = psi.returnType?.let { it.toJeType(psi.manager, registry) } ?: JeNoneType
 
-    override fun getReceiverType() = psi.getReceiverTypeMirror()
+    override fun getReceiverType() = psi.getReceiverTypeMirror(registry)
     
     override fun isVarArgs() = psi.isVarArgs
 
@@ -59,7 +63,7 @@ class JeMethodExecutableElement(override val psi: PsiMethod) : JeElement, Execut
         else -> ElementKind.METHOD
     }
 
-    override fun asType() = JeMethodExecutableTypeMirror(psi)
+    override fun asType() = JeMethodExecutableTypeMirror(psi, registry)
 
     override fun <R : Any?, P : Any?> accept(v: ElementVisitor<R, P>, p: P) = v.visitExecutable(this, p)
 
@@ -77,14 +81,14 @@ class JeMethodExecutableElement(override val psi: PsiMethod) : JeElement, Execut
     override fun toString() = psi.name
 }
 
-fun PsiMethod.getReceiverTypeMirror(): TypeMirror {
+fun PsiMethod.getReceiverTypeMirror(registry: JeElementRegistry): TypeMirror {
     if (isStatic) return JeNoneType
 
     if (isConstructor) {
         val containingClass = containingClass
         if (containingClass != null && !containingClass.isStatic) {
             containingClass.containingClass?.let {
-                return PsiTypesUtil.getClassType(it).toJeType(manager)
+                return PsiTypesUtil.getClassType(it).toJeType(manager, registry)
             }
         }
 
@@ -92,6 +96,6 @@ fun PsiMethod.getReceiverTypeMirror(): TypeMirror {
     }
 
     val containingClass = containingClass ?: return JeNoneType
-    return PsiTypesUtil.getClassType(containingClass).toJeType(manager)
+    return PsiTypesUtil.getClassType(containingClass).toJeType(manager, registry)
     
 }

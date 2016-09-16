@@ -16,11 +16,12 @@
 
 package org.jetbrains.kotlin.java.model.types
 
+import com.intellij.openapi.Disposable
 import javax.lang.model.element.AnnotationMirror
 import javax.lang.model.type.TypeMirror
 
 //TODO support type annotations
-interface JeTypeMirror : TypeMirror {
+interface JeTypeMirror : TypeMirror, Disposable {
     override fun getAnnotationMirrors() = emptyList<AnnotationMirror>()
 
     override fun <A : Annotation> getAnnotation(annotationClass: Class<A>?) = null

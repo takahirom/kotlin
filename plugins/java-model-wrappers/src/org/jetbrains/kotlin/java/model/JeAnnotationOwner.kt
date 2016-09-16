@@ -19,6 +19,7 @@ package org.jetbrains.kotlin.java.model
 import com.intellij.psi.PsiClass
 import com.intellij.psi.PsiModifierListOwner
 import org.jetbrains.kotlin.java.model.elements.JeAnnotationMirror
+import org.jetbrains.kotlin.java.model.internal.JeElementRegistry
 import org.jetbrains.kotlin.java.model.internal.KotlinAnnotationProxyMaker
 import org.jetbrains.kotlin.java.model.internal.getAnnotationsWithInherited
 import javax.lang.model.element.AnnotationMirror
@@ -27,8 +28,10 @@ import java.lang.reflect.Array as RArray
 
 interface JeAnnotationOwner : JeElement {
     override val psi: PsiModifierListOwner
+
+    val registry: JeElementRegistry
     
-    override fun getAnnotationMirrors() = psi.getAnnotationsWithInherited().map(::JeAnnotationMirror)
+    override fun getAnnotationMirrors() = psi.getAnnotationsWithInherited().map { JeAnnotationMirror(it, registry) }
     
     override fun <A : Annotation> getAnnotation(annotationClass: Class<A>): A? {
         return getAnnotationsByType(annotationClass, onlyFirst = true).firstOrNull()
@@ -60,7 +63,7 @@ interface JeAnnotationOwner : JeElement {
         @Suppress("UNCHECKED_CAST")
         val annotationProxies = annotationDeclarations.map {
             val (annotation, annotationDeclaration) = it
-            KotlinAnnotationProxyMaker(annotation, annotationDeclaration!!, annotationClass).generate() as? A
+            KotlinAnnotationProxyMaker(annotation, annotationDeclaration!!, annotationClass, registry).generate() as? A
         }
 
         @Suppress("UNCHECKED_CAST")

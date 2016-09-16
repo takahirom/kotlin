@@ -18,10 +18,25 @@ package org.jetbrains.kotlin.java.model.types
 
 import com.intellij.psi.PsiClassInitializer
 import com.intellij.psi.PsiManager
+import org.jetbrains.kotlin.annotation.processing.impl.toDisposable
+import org.jetbrains.kotlin.annotation.processing.impl.dispose
+import org.jetbrains.kotlin.java.model.internal.JeElementRegistry
 import org.jetbrains.kotlin.java.model.internal.isStatic
 import javax.lang.model.type.*
 
-class JeClassInitializerExecutableTypeMirror(val initializer: PsiClassInitializer) : JeTypeMirror, JeTypeWithManager, ExecutableType {
+class JeClassInitializerExecutableTypeMirror(
+        initializer: PsiClassInitializer,
+        registry: JeElementRegistry
+) : JeTypeMirror, JeTypeWithManager, ExecutableType {
+    init { registry.register(this) }
+
+    private val disposableInitializer = initializer.toDisposable()
+
+    val initializer: PsiClassInitializer
+        get() = disposableInitializer()
+
+    override fun dispose() = dispose(disposableInitializer)
+
     override fun getKind() = TypeKind.EXECUTABLE
     
     override fun <R : Any?, P : Any?> accept(v: TypeVisitor<R, P>, p: P) = v.visitExecutable(this, p)

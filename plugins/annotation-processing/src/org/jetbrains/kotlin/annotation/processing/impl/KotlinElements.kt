@@ -27,6 +27,7 @@ import org.jetbrains.kotlin.java.model.elements.JeAnnotationMirror
 import org.jetbrains.kotlin.java.model.elements.JeMethodExecutableElement
 import org.jetbrains.kotlin.java.model.elements.JePackageElement
 import org.jetbrains.kotlin.java.model.elements.JeTypeElement
+import org.jetbrains.kotlin.java.model.internal.JeElementRegistry
 import java.io.PrintWriter
 import java.io.Writer
 import javax.lang.model.element.*
@@ -34,12 +35,14 @@ import javax.lang.model.util.Elements
 
 class KotlinElements(
         javaPsiFacade: JavaPsiFacade, 
-        scope: GlobalSearchScope
+        scope: GlobalSearchScope,
+        registry: JeElementRegistry
 ) : Elements, Disposable {
     internal val javaPsiFacade = javaPsiFacade.toDisposable()
     internal val scope = scope.toDisposable()
+    private val registry = registry.toDisposable()
 
-    override fun dispose() = dispose(javaPsiFacade, scope)
+    override fun dispose() = dispose(javaPsiFacade, scope, registry)
 
     override fun hides(hider: Element, hidden: Element): Boolean {
         val hiderMethod = (hider as? JeMethodExecutableElement)?.psi ?: return false
@@ -97,12 +100,12 @@ class KotlinElements(
 
     override fun getPackageElement(name: CharSequence): PackageElement? {
         val psiPackage = javaPsiFacade().findPackage(name.toString()) ?: return null
-        return JePackageElement(psiPackage)
+        return JePackageElement(psiPackage, registry())
     }
 
     override fun getTypeElement(name: CharSequence): TypeElement? {
         val psiClass = javaPsiFacade().findClass(name.toString(), scope()) ?: return null
-        return JeTypeElement(psiClass)
+        return JeTypeElement(psiClass, registry())
     }
 
     override fun getConstantExpression(value: Any?) = Constants.format(value)
@@ -128,7 +131,7 @@ class KotlinElements(
                 for (parentAnnotation in parentAnnotations) {
                     val annotationClass = parentAnnotation.nameReferenceElement?.resolve() as? PsiClass ?: continue
                     annotationClass.modifierList?.findAnnotation("java.lang.annotation.Inherited") ?: continue
-                    annotations += JeAnnotationMirror(parentAnnotation)
+                    annotations += JeAnnotationMirror(parentAnnotation, registry())
                 }
                 
                 parent = parent.superClass

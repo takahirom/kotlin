@@ -16,8 +16,12 @@
 
 package org.jetbrains.kotlin.java.model.elements
 
+import com.intellij.openapi.Disposable
 import com.intellij.psi.*
 import com.intellij.psi.util.PsiTypesUtil
+import org.jetbrains.kotlin.annotation.processing.impl.toDisposable
+import org.jetbrains.kotlin.annotation.processing.impl.dispose
+import org.jetbrains.kotlin.java.model.internal.JeElementRegistry
 import org.jetbrains.kotlin.java.model.types.JeDeclaredErrorType
 import org.jetbrains.kotlin.java.model.types.JeDeclaredType
 import javax.lang.model.element.AnnotationMirror
@@ -25,10 +29,19 @@ import javax.lang.model.element.AnnotationValue
 import javax.lang.model.element.ExecutableElement
 import javax.lang.model.type.DeclaredType
 
-class JeAnnotationMirror(val psi: PsiAnnotation) : AnnotationMirror {
+class JeAnnotationMirror(psi: PsiAnnotation, private val registry: JeElementRegistry) : AnnotationMirror, Disposable {
+    init { registry.register(this) }
+
+    private val disposablePsi = psi.toDisposable()
+
+    val psi: PsiAnnotation
+        get() = disposablePsi()
+
+    override fun dispose() = dispose(disposablePsi)
+
     override fun getAnnotationType(): DeclaredType? {
         val psiClass = resolveAnnotationClass() ?: return JeDeclaredErrorType
-        return JeDeclaredType(PsiTypesUtil.getClassType(psiClass), psiClass)
+        return JeDeclaredType(PsiTypesUtil.getClassType(psiClass), psiClass, registry)
     }
 
     override fun getElementValues(): Map<out ExecutableElement, AnnotationValue> = getElementValues(false)
@@ -49,11 +62,11 @@ class JeAnnotationMirror(val psi: PsiAnnotation) : AnnotationMirror {
                 
                 val annotationValue = when {
                     returnType is PsiArrayType && attributeValue !is PsiArrayInitializerMemberValue -> 
-                        JeSingletonArrayAnnotationValue(attributeValue)
-                    else -> JeAnnotationValue(attributeValue) 
+                        JeSingletonArrayAnnotationValue(attributeValue, registry)
+                    else -> attributeValue.toJeAnnotationValue(registry)
                 }
                 
-                put(JeMethodExecutableElement(method), annotationValue)
+                put(JeMethodExecutableElement(method, registry), annotationValue)
             }
         }
     }

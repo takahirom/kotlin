@@ -18,7 +18,10 @@ package org.jetbrains.kotlin.java.model.elements
 
 import com.intellij.psi.*
 import com.intellij.psi.util.PsiTreeUtil
+import org.jetbrains.kotlin.annotation.processing.impl.toDisposable
+import org.jetbrains.kotlin.annotation.processing.impl.dispose
 import org.jetbrains.kotlin.java.model.*
+import org.jetbrains.kotlin.java.model.internal.JeElementRegistry
 import org.jetbrains.kotlin.java.model.internal.calcConstantValue
 import org.jetbrains.kotlin.java.model.types.toJeType
 import javax.lang.model.element.Element
@@ -26,16 +29,28 @@ import javax.lang.model.element.ElementKind
 import javax.lang.model.element.ElementVisitor
 import javax.lang.model.element.VariableElement
 
-class JeVariableElement(override val psi: PsiVariable) : JeElement, VariableElement, JeModifierListOwner, JeAnnotationOwner {
+class JeVariableElement(
+        psi: PsiVariable,
+        override val registry: JeElementRegistry
+) : JeElement, VariableElement, JeModifierListOwner, JeAnnotationOwner {
+    init { registry.register(this) }
+
+    private val disposablePsi = psi.toDisposable()
+
+    override fun dispose() = dispose(disposablePsi)
+
+    override val psi: PsiVariable
+        get() = disposablePsi()
+
     override fun getSimpleName() = JeName(psi.name)
 
     override fun getEnclosingElement(): JeElement? {
-        if (psi is PsiParameter) {
-            (psi.declarationScope as? PsiMethod)?.let { return JeMethodExecutableElement(it) }
+        (psi as? PsiParameter)?.let { psi ->
+            (psi.declarationScope as? PsiMethod)?.let { return JeMethodExecutableElement(it, registry) }
         }
         
         val containingClass = (psi as? PsiMember)?.containingClass ?: PsiTreeUtil.getParentOfType(psi, PsiClass::class.java) 
-        return containingClass?.let(::JeTypeElement)
+        return containingClass?.let { JeTypeElement(it, registry) }
     }
 
     override fun getConstantValue() = psi.initializer?.calcConstantValue()
@@ -46,7 +61,7 @@ class JeVariableElement(override val psi: PsiVariable) : JeElement, VariableElem
         else -> ElementKind.LOCAL_VARIABLE
     }
 
-    override fun asType() = psi.type.toJeType(psi.manager)
+    override fun asType() = psi.type.toJeType(psi.manager, registry)
 
     override fun <R : Any?, P : Any?> accept(v: ElementVisitor<R, P>, p: P) = v.visitVariable(this, p)
 

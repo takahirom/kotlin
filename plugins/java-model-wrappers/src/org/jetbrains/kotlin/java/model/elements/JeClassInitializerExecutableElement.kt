@@ -18,18 +18,21 @@ package org.jetbrains.kotlin.java.model.elements
 
 import com.intellij.psi.PsiClassInitializer
 import org.jetbrains.kotlin.java.model.*
+import org.jetbrains.kotlin.java.model.internal.JeElementRegistry
 import org.jetbrains.kotlin.java.model.internal.isStatic
 import org.jetbrains.kotlin.java.model.types.JeClassInitializerExecutableTypeMirror
 import org.jetbrains.kotlin.java.model.types.JeNoneType
 import javax.lang.model.element.*
 import javax.lang.model.type.TypeMirror
 
-class JeClassInitializerExecutableElement(override val psi: PsiClassInitializer) : JeElement,
-        ExecutableElement, JeNoAnnotations, JeModifierListOwner
+class JeClassInitializerExecutableElement(
+        psi: PsiClassInitializer,
+        registry: JeElementRegistry
+) : AbstractJeElement<PsiClassInitializer>(psi, registry), ExecutableElement, JeNoAnnotations, JeModifierListOwner
 {
     val isStaticInitializer = psi.isStatic
 
-    override fun getEnclosingElement() = psi.containingClass?.let { JeTypeElement(it) }
+    override fun getEnclosingElement() = psi.containingClass?.let { JeTypeElement(it, registry) }
 
     override fun getSimpleName() = if (isStaticInitializer) JeName.CLINIT else JeName.EMPTY
 
@@ -51,7 +54,7 @@ class JeClassInitializerExecutableElement(override val psi: PsiClassInitializer)
 
     override fun getKind() = if (isStaticInitializer) ElementKind.STATIC_INIT else ElementKind.INSTANCE_INIT
 
-    override fun asType() = JeClassInitializerExecutableTypeMirror(psi)
+    override fun asType() = JeClassInitializerExecutableTypeMirror(psi, registry)
 
     override fun <R : Any?, P : Any?> accept(v: ElementVisitor<R, P>, p: P) = v.visitExecutable(this, p)
 

@@ -18,14 +18,14 @@ package org.jetbrains.kotlin.java.model
 
 import com.intellij.psi.*
 import org.jetbrains.kotlin.java.model.elements.*
+import org.jetbrains.kotlin.java.model.internal.JeElementRegistry
 
-// to extension function?
-fun PsiElement?.toJeElement(): JeElement? = when (this) {
+fun PsiElement?.toJeElement(registry: JeElementRegistry): JeElement? = when (this) {
     null -> null
-    is PsiPackage -> JePackageElement(this)
-    is PsiClass -> JeTypeElement(this)
-    is PsiVariable -> JeVariableElement(this)
-    is PsiMethod -> JeMethodExecutableElement(this)
-    is PsiClassInitializer -> JeClassInitializerExecutableElement(this)
+    is PsiPackage -> JePackageElement(this, registry)
+    is PsiClass -> JeTypeElement(this, registry)
+    is PsiVariable -> JeVariableElement(this, registry)
+    is PsiMethod -> JeMethodExecutableElement(this, registry)
+    is PsiClassInitializer -> JeClassInitializerExecutableElement(this, registry)
     else -> null
 }

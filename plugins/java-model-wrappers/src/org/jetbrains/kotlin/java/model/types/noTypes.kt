@@ -18,12 +18,15 @@ package org.jetbrains.kotlin.java.model.types
 
 import javax.lang.model.type.*
 
-interface JeNoType : JeTypeMirror, NoType
+interface JeNoType : JeTypeMirror, NoType {
+    override fun dispose() {}
+}
 
 object JePackageTypeMirror : JeNoType {
     override fun getKind() = TypeKind.PACKAGE
     override fun <R : Any?, P : Any?> accept(v: TypeVisitor<R, P>, p: P) = v.visitNoType(this, p)
     override fun toString() = "<package>"
+
 }
 
 object JeNoneType : JeNoType {
