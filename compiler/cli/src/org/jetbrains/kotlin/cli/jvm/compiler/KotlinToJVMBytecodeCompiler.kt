@@ -17,7 +17,6 @@
 package org.jetbrains.kotlin.cli.jvm.compiler
 
 import com.intellij.openapi.util.io.JarUtil
-import org.jetbrains.annotations.TestOnly
 import com.intellij.psi.PsiManager
 import com.intellij.psi.impl.PsiModificationTrackerImpl
 import org.jetbrains.kotlin.analyzer.AnalysisResult
@@ -28,16 +27,13 @@ import org.jetbrains.kotlin.cli.common.CLIConfigurationKeys
 import org.jetbrains.kotlin.cli.common.ExitCode
 import org.jetbrains.kotlin.cli.common.messages.*
 import org.jetbrains.kotlin.cli.common.output.outputUtils.writeAll
+import org.jetbrains.kotlin.cli.common.tryConstructScriptClass
 import org.jetbrains.kotlin.cli.jvm.K2JVMCompiler
-import org.jetbrains.kotlin.cli.jvm.config.addJavaSourceRoot
-import org.jetbrains.kotlin.cli.jvm.config.addJvmClasspathRoot
-import org.jetbrains.kotlin.cli.jvm.config.jvmClasspathRoots
+import org.jetbrains.kotlin.cli.jvm.config.*
 import org.jetbrains.kotlin.codegen.ClassBuilderFactories
 import org.jetbrains.kotlin.codegen.CompilationErrorHandler
 import org.jetbrains.kotlin.codegen.GeneratedClassLoader
 import org.jetbrains.kotlin.codegen.KotlinCodegenFacade
-import org.jetbrains.kotlin.cli.jvm.config.*
-import org.jetbrains.kotlin.codegen.*
 import org.jetbrains.kotlin.codegen.state.GenerationState
 import org.jetbrains.kotlin.codegen.state.GenerationStateEventCallback
 import org.jetbrains.kotlin.config.CompilerConfiguration
@@ -64,10 +60,6 @@ import java.lang.reflect.InvocationTargetException
 import java.net.URLClassLoader
 import java.util.concurrent.TimeUnit
 import java.util.jar.Attributes
-import kotlin.reflect.KParameter
-import kotlin.reflect.KType
-import kotlin.reflect.defaultType
-import kotlin.reflect.jvm.javaType
 
 object KotlinToJVMBytecodeCompiler {
 
@@ -228,7 +220,7 @@ object KotlinToJVMBytecodeCompiler {
 
         try {
             try {
-                tryConstructClass(scriptClass, scriptArgs)
+                tryConstructScriptClass(scriptClass, scriptArgs)
                 ?: throw RuntimeException("unable to find appropriate constructor for class ${scriptClass.name} accepting arguments $scriptArgs\n")
             }
             finally {
@@ -289,78 +281,6 @@ object KotlinToJVMBytecodeCompiler {
         for (i in 0..relevantEntries - 1) {
             stream.println("\tat " + fullTrace[i])
         }
-    }
-
-    @TestOnly
-    fun tryConstructClassPub(scriptClass: Class<*>, scriptArgs: List<String>): Any? = tryConstructClass(scriptClass, scriptArgs)
-
-    private fun tryConstructClass(scriptClass: Class<*>, scriptArgs: List<String>): Any? {
-
-        fun convertPrimitive(type: KType?, arg: String): Any? =
-                when (type) {
-                    String::class.defaultType -> arg
-                    Int::class.defaultType -> arg.toInt()
-                    Long::class.defaultType -> arg.toLong()
-                    Short::class.defaultType -> arg.toShort()
-                    Byte::class.defaultType -> arg.toByte()
-                    Char::class.defaultType -> arg[0]
-                    Float::class.defaultType -> arg.toFloat()
-                    Double::class.defaultType -> arg.toDouble()
-                    Boolean::class.defaultType -> arg.toBoolean()
-                    else -> null
-                }
-
-        fun convertArray(type: KType?, args: List<String>): Any? =
-                when (type) {
-                    String::class.defaultType -> args.toTypedArray()
-                    Int::class.defaultType -> args.map { it.toInt() }.toTypedArray()
-                    Long::class.defaultType -> args.map { it.toLong() }.toTypedArray()
-                    Short::class.defaultType -> args.map { it.toShort() }.toTypedArray()
-                    Byte::class.defaultType -> args.map { it.toByte() }.toTypedArray()
-                    Char::class.defaultType -> args.map { it[0] }.toTypedArray()
-                    Float::class.defaultType -> args.map { it.toFloat() }.toTypedArray()
-                    Double::class.defaultType -> args.map { it.toDouble() }.toTypedArray()
-                    Boolean::class.defaultType -> args.map { it.toBoolean() }.toTypedArray()
-                    else -> null
-                }
-
-        fun foldingFunc(state: Pair<List<Any>, List<String>?>, par: KParameter): Pair<List<Any>, List<String>?> {
-            state.second?.let { scriptArgsLeft ->
-                try {
-                    if (scriptArgsLeft.isNotEmpty()) {
-                        val primArgCandidate = convertPrimitive(par.type, scriptArgsLeft.first())
-                        if (primArgCandidate != null)
-                            return@foldingFunc Pair(state.first + primArgCandidate, scriptArgsLeft.drop(1))
-                    }
-
-                    val arrCompType = (par.type.javaType as? Class<*>)?.componentType?.kotlin?.defaultType
-                    val arrayArgCandidate = convertArray(arrCompType, scriptArgsLeft)
-                    if (arrayArgCandidate != null)
-                        return@foldingFunc Pair(state.first + arrayArgCandidate, null)
-                }
-                catch (e: NumberFormatException) {
-                } // just skips to return below
-            }
-            return state
-        }
-
-        try {
-            return scriptClass.getConstructor(Array<String>::class.java).newInstance(*arrayOf<Any>(scriptArgs.toTypedArray()))
-        }
-        catch (e: java.lang.NoSuchMethodException) {
-            for (ctor in scriptClass.kotlin.constructors) {
-                val (ctorArgs, scriptArgsLeft) = ctor.parameters.fold(Pair(emptyList<Any>(), scriptArgs), ::foldingFunc)
-                if (ctorArgs.size <= ctor.parameters.size && (scriptArgsLeft == null || scriptArgsLeft.isEmpty())) {
-                    val argsMap = ctorArgs.zip(ctor.parameters) { a, p -> Pair(p, a) }.toMap()
-                    try {
-                        return ctor.callBy(argsMap)
-                    }
-                    catch (e: Exception) { // TODO: find the exact exception type thrown then callBy fails
-                    }
-                }
-            }
-        }
-        return null
     }
 
     fun compileScript(environment: KotlinCoreEnvironment, paths: KotlinPaths): Class<*>? =
@@ -462,7 +382,7 @@ object KotlinToJVMBytecodeCompiler {
                 configuration,
                 GenerationState.GenerateClassFilter.GENERATE_ALL,
                 module?.let(::TargetId),
-                module?.let { it.getModuleName() },
+                module?.let(Module::getModuleName),
                 module?.let { File(it.getOutputDirectory()) },
                 createOutputFilesFlushingCallbackIfPossible(configuration)
         )
