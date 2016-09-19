@@ -186,7 +186,7 @@ public class AsmUtil {
     }
 
     public static int getMethodAsmFlags(FunctionDescriptor functionDescriptor, OwnerKind kind, GenerationState state) {
-        int flags = getCommonCallableFlags(functionDescriptor);
+        int flags = getCommonCallableFlags(functionDescriptor, state);
 
         for (AnnotationCodegen.JvmFlagAnnotation flagAnnotation : AnnotationCodegen.METHOD_FLAGS) {
             if (flagAnnotation.hasAnnotation(functionDescriptor.getOriginal())) {
@@ -227,13 +227,12 @@ public class AsmUtil {
         return flags;
     }
 
-    private static int getCommonCallableFlags(FunctionDescriptor functionDescriptor) {
+    private static int getCommonCallableFlags(FunctionDescriptor functionDescriptor, GenerationState state) {
         int flags = getVisibilityAccessFlag(functionDescriptor);
         flags |= getVarargsFlag(functionDescriptor);
         flags |= getDeprecatedAccessFlag(functionDescriptor);
-        if (DeprecationUtilKt.isHiddenInResolution(functionDescriptor)
-            || functionDescriptor instanceof PropertyAccessorDescriptor
-               && DeprecationUtilKt.isHiddenInResolution(((PropertyAccessorDescriptor) functionDescriptor).getCorrespondingProperty())) {
+        if (DeprecationUtilKt.isHiddenInResolution(functionDescriptor, state.getLanguageVersionSettings()) ||
+            DeprecationUtilKt.isHiddenInResolution(JvmCodegenUtil.getDirectMember(functionDescriptor), state.getLanguageVersionSettings())) {
             flags |= ACC_SYNTHETIC;
         }
         return flags;
