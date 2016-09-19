@@ -23,6 +23,7 @@ import org.jetbrains.kotlin.resolve.DescriptorUtils
 import org.jetbrains.kotlin.resolve.DescriptorUtils.isCompanionObject
 import org.jetbrains.kotlin.resolve.calls.tasks.isDynamic
 import org.jetbrains.kotlin.resolve.calls.util.FakeCallableDescriptorForObject
+import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameUnsafe
 import org.jetbrains.kotlin.resolve.descriptorUtil.isEnumValueOfMethod
 import java.util.*
 
@@ -188,7 +189,10 @@ class NameSuggestion {
                 overriddenDescriptor is CallableDescriptor && stable -> {
                     getStableMangledName(baseName, getArgumentTypesAsString(overriddenDescriptor))
                 }
-                shouldMangleUnstable(overriddenDescriptor) -> baseName + "_private\$"
+                shouldMangleUnstable(overriddenDescriptor) -> {
+                    val ownerName = descriptor.containingDeclaration!!.fqNameUnsafe.asString()
+                    getStableMangledName(baseName, ownerName + ":" + getArgumentTypesAsString(overriddenDescriptor as CallableDescriptor))
+                }
                 else -> baseName
             }
 
@@ -215,7 +219,7 @@ class NameSuggestion {
             if (DescriptorUtils.isDescriptorWithLocalVisibility(descriptor)) return false
 
             val containingClass = DescriptorUtils.getContainingClass(descriptor)
-            if (containingClass != null && containingClass.modality == Modality.OPEN) {
+            if (containingClass != null && descriptor is CallableMemberDescriptor && !descriptor.isOverridable) {
                 return containingClass.visibility.isPublicAPI
             }
 
