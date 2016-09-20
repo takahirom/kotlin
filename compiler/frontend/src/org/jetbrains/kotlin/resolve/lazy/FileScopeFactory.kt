@@ -16,11 +16,13 @@
 
 package org.jetbrains.kotlin.resolve.lazy
 
+import org.jetbrains.kotlin.builtins.KotlinBuiltIns
 import org.jetbrains.kotlin.descriptors.*
 import org.jetbrains.kotlin.descriptors.annotations.Annotations
 import org.jetbrains.kotlin.incremental.components.LookupLocation
 import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.name.Name
+import org.jetbrains.kotlin.name.isSubpackageOf
 import org.jetbrains.kotlin.psi.KtFile
 import org.jetbrains.kotlin.psi.KtImportDirective
 import org.jetbrains.kotlin.psi.KtImportsFactory
@@ -79,6 +81,8 @@ class FileScopeFactory(
             allImplicitImports.filter { it.isAllUnder || it.importedFqName !in aliasImportNames }
         }
 
+        val (kotlinDefaultImports, otherDefaultImports) = defaultImportsFiltered.partition { it.importedFqName?.isSubpackageOf(KotlinBuiltIns.BUILT_INS_PACKAGE_FQ_NAME) == true }
+
         val packageView = moduleDescriptor.getPackage(file.packageFqName)
         val packageFragment = topLevelDescriptorProvider.getPackageFragment(file.packageFqName)
                               ?: error("Could not find fragment ${file.packageFqName} for file ${file.name}")
@@ -90,13 +94,14 @@ class FileScopeFactory(
         val allUnderImportResolver = createImportResolver(AllUnderImportsIndexed(imports), bindingTrace) // TODO: should we count excludedImports here also?
 
         val defaultExplicitImportResolver = createImportResolver(ExplicitImportsIndexed(defaultImportsFiltered), tempTrace)
-        val defaultAllUnderImportResolver = createImportResolver(AllUnderImportsIndexed(defaultImportsFiltered), tempTrace, moduleDescriptor.excludedImports)
+        val defaultKotlinAllUnderImportResolver = createImportResolver(AllUnderImportsIndexed(kotlinDefaultImports), tempTrace, moduleDescriptor.excludedImports)
+        val defaultOtherAllUnderImportResolver = createImportResolver(AllUnderImportsIndexed(otherDefaultImports), tempTrace, moduleDescriptor.excludedImports)
 
         val dummyContainerDescriptor = DummyContainerDescriptor(file, packageFragment)
 
         var scope: ImportingScope
 
-        scope = LazyImportScope(existingImports, defaultAllUnderImportResolver, LazyImportScope.FilteringKind.INVISIBLE_CLASSES,
+        scope = LazyImportScope(existingImports, defaultOtherAllUnderImportResolver, LazyImportScope.FilteringKind.INVISIBLE_CLASSES,
                                 "Default all under imports in $debugName (invisible classes only)")
 
         scope = LazyImportScope(scope, allUnderImportResolver, LazyImportScope.FilteringKind.INVISIBLE_CLASSES,
@@ -104,8 +109,11 @@ class FileScopeFactory(
 
         scope = currentPackageScope(packageView, aliasImportNames, dummyContainerDescriptor, FilteringKind.INVISIBLE_CLASSES, scope)
 
-        scope = LazyImportScope(scope, defaultAllUnderImportResolver, LazyImportScope.FilteringKind.VISIBLE_CLASSES,
-                                "Default all under imports in $debugName (visible classes)")
+        scope = LazyImportScope(scope, defaultOtherAllUnderImportResolver, LazyImportScope.FilteringKind.VISIBLE_CLASSES,
+                                "Default all under other imports in $debugName (visible classes)")
+
+        scope = LazyImportScope(scope, defaultKotlinAllUnderImportResolver, LazyImportScope.FilteringKind.VISIBLE_CLASSES,
+                                "Default all under kotlin imports in $debugName (visible classes)")
 
         scope = LazyImportScope(scope, allUnderImportResolver, LazyImportScope.FilteringKind.VISIBLE_CLASSES,
                                 "All under imports in $debugName (visible classes)")
