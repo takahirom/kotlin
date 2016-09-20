@@ -25,6 +25,7 @@ import org.jetbrains.kotlin.idea.refactoring.memberInfo.getClassDescriptorIfAny
 import org.jetbrains.kotlin.idea.util.getResolutionScope
 import org.jetbrains.kotlin.psi.KtClassOrObject
 import org.jetbrains.kotlin.psi.KtNamedDeclaration
+import org.jetbrains.kotlin.psi.KtParameter
 import org.jetbrains.kotlin.resolve.BindingContext
 import org.jetbrains.kotlin.resolve.scopes.DescriptorKindFilter
 import org.jetbrains.kotlin.resolve.scopes.utils.collectDescriptorsFiltered
@@ -42,7 +43,14 @@ class KotlinPullUpData(val sourceClass: KtClassOrObject,
 
     val sourceClassDescriptor = sourceClassContext[BindingContext.DECLARATION_TO_DESCRIPTOR, sourceClass] as ClassDescriptor
 
-    val memberDescriptors = membersToMove.keysToMap { sourceClassContext[BindingContext.DECLARATION_TO_DESCRIPTOR, it]!! }
+    val memberDescriptors = membersToMove.keysToMap {
+        if (it is KtParameter) {
+            sourceClassContext[BindingContext.PRIMARY_CONSTRUCTOR_PARAMETER, it]!!
+        }
+        else {
+            sourceClassContext[BindingContext.DECLARATION_TO_DESCRIPTOR, it]!!
+        }
+    }
 
     val targetClassDescriptor = targetClass.getClassDescriptorIfAny(resolutionFacade)!!
 

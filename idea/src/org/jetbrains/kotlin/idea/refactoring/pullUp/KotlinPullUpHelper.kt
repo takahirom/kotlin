@@ -34,6 +34,7 @@ import org.jetbrains.kotlin.descriptors.*
 import org.jetbrains.kotlin.idea.KotlinLanguage
 import org.jetbrains.kotlin.idea.codeInsight.shorten.addToShorteningWaitSet
 import org.jetbrains.kotlin.idea.core.dropDefaultValue
+import org.jetbrains.kotlin.idea.core.replaced
 import org.jetbrains.kotlin.idea.intentions.setType
 import org.jetbrains.kotlin.idea.refactoring.createJavaField
 import org.jetbrains.kotlin.idea.refactoring.dropOverrideKeywordIfNecessary
@@ -380,11 +381,16 @@ class KotlinPullUpHelper(
         val lightMethod = member.getRepresentativeLightMethod()!!
 
         val movedMember: PsiMember = when (member) {
-            is KtProperty -> {
+            is KtProperty, is KtParameter -> {
                 val newType = substitutor.substitute(lightMethod.returnType)
                 val newField = createJavaField(member, data.targetClass)
                 newField.typeElement?.replace(elementFactory.createTypeElement(newType))
-                member.delete()
+                if (member is KtParameter) {
+                    (member.parent as? KtParameterList)?.removeParameter(member)
+                }
+                else {
+                    member.delete()
+                }
                 newField
             }
             is KtNamedFunction -> {
@@ -448,6 +454,8 @@ class KotlinPullUpHelper(
             val movedMember: KtCallableDeclaration
             val clashingSuper = fixOverrideAndGetClashingSuper(member, memberCopy)
 
+            val psiFactory = KtPsiFactory(member)
+
             val originalIsAbstract = member.hasModifier(KtTokens.ABSTRACT_KEYWORD)
             val toAbstract = when {
                 info.isToAbstract -> true
@@ -469,7 +477,18 @@ class KotlinPullUpHelper(
             }
             else {
                 movedMember = doAddCallableMember(memberCopy, clashingSuper, data.targetClass)
-                member.delete()
+                if (member is KtParameter && movedMember is KtParameter) {
+                    member.valOrVarKeyword?.delete()
+                    data.sourceClass.getSuperTypeEntryByDescriptor(data.targetClassDescriptor, data.sourceClassContext)?.let {
+                        val superCall = if (it !is KtSuperTypeCallEntry || it.valueArgumentList == null) {
+                            it.replaced(psiFactory.createSuperTypeCallEntry("${it.text}()"))
+                        } else it
+                        superCall.valueArgumentList!!.addArgument(psiFactory.createArgument(member.name!!))
+                    }
+                }
+                else {
+                    member.delete()
+                }
             }
 
             if (originalIsAbstract && data.isInterfaceTarget) {
