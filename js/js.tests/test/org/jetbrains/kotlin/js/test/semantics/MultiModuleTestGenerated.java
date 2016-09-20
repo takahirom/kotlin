@@ -41,6 +41,18 @@ public class MultiModuleTestGenerated extends AbstractMultiModuleTest {
         doTest(fileName);
     }
 
+    @TestMetadata("privateInterfaceNameClash")
+    public void testPrivateInterfaceNameClash() throws Exception {
+        String fileName = KotlinTestUtils.navigationMetadata("js/js.translator/testData/multiModule/cases/privateInterfaceNameClash/");
+        doTest(fileName);
+    }
+
+    @TestMetadata("privateNameClash")
+    public void testPrivateNameClash() throws Exception {
+        String fileName = KotlinTestUtils.navigationMetadata("js/js.translator/testData/multiModule/cases/privateNameClash/");
+        doTest(fileName);
+    }
+
     @TestMetadata("useElementsFromDefaultPackageInAnotherModule")
     public void testUseElementsFromDefaultPackageInAnotherModule() throws Exception {
         String fileName = KotlinTestUtils.navigationMetadata("js/js.translator/testData/multiModule/cases/useElementsFromDefaultPackageInAnotherModule/");

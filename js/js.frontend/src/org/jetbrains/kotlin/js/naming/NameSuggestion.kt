@@ -201,7 +201,7 @@ class NameSuggestion {
             return getStableMangledName(baseName, ownerName + ":" + getArgumentTypesAsString(descriptor))
         }
 
-        @JvmStatic fun getArgumentTypesAsString(descriptor: CallableDescriptor): String {
+        private fun getArgumentTypesAsString(descriptor: CallableDescriptor): String {
             val argTypes = StringBuilder()
 
             val receiverParameter = descriptor.extensionReceiverParameter

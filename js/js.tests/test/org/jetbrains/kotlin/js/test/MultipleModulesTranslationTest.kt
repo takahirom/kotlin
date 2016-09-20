@@ -33,6 +33,7 @@ import java.util.*
 
 abstract class MultipleModulesTranslationTest(main: String) : BasicTest(main) {
     private val MAIN_MODULE_NAME: String = "main"
+    private val OLD_MODULE_SUFFIX = "-old"
     private var dependencies: Map<String, List<String>>? = null
     protected var moduleKind = ModuleKind.PLAIN
 
@@ -42,7 +43,7 @@ abstract class MultipleModulesTranslationTest(main: String) : BasicTest(main) {
 
         // KT-7428: !! is necessary here
         for ((moduleName, dependencies) in dependencies!!) {
-            translateModule(dirName, filePath, moduleName, dependencies)
+            translateModule(dirName, filePath, moduleName.removeSuffix(OLD_MODULE_SUFFIX), dependencies)
         }
 
         val filename = getInputFilePath(getModuleDirectoryName(dirName, MAIN_MODULE_NAME) + File.separator + MAIN_MODULE_NAME + ".kt")
@@ -52,7 +53,8 @@ abstract class MultipleModulesTranslationTest(main: String) : BasicTest(main) {
 
     private fun runMultiModuleTest(dirName: String, packageName: String, functionName: String, expectedResult: Any) {
         val moduleDirectoryName = getModuleDirectoryName(dirName, MAIN_MODULE_NAME)
-        runRhinoTests(moduleDirectoryName, BasicTest.DEFAULT_ECMA_VERSIONS, RhinoFunctionResultChecker(MAIN_MODULE_NAME, packageName, functionName, expectedResult))
+        val checker = RhinoFunctionResultChecker(MAIN_MODULE_NAME, packageName, functionName, expectedResult)
+        runRhinoTests(moduleDirectoryName, BasicTest.DEFAULT_ECMA_VERSIONS, checker)
     }
 
     private fun translateModule(dirName: String, pathToDir: String, moduleName: String, dependencies: List<String>) {
@@ -62,9 +64,11 @@ abstract class MultipleModulesTranslationTest(main: String) : BasicTest(main) {
         BasicTest.DEFAULT_ECMA_VERSIONS.forEach { version ->
             val libraries = arrayListOf<String>()
             for (dependencyName in dependencies) {
-                libraries.add(getMetaFileOutputPath(getModuleDirectoryName(dirName, dependencyName), version))
+                val moduleDir = getModuleDirectoryName(dirName, dependencyName.removeSuffix(OLD_MODULE_SUFFIX))
+                libraries.add(getMetaFileOutputPath(moduleDir, version))
             }
-            generateJavaScriptFiles(fullFilePaths, moduleDirectoryName, MainCallParameters.noCall(), version, moduleName, libraries)
+            generateJavaScriptFiles(fullFilePaths, moduleDirectoryName, MainCallParameters.noCall(), version,
+                                    moduleName.removeSuffix(OLD_MODULE_SUFFIX), libraries)
         }
     }
     
@@ -91,8 +95,8 @@ abstract class MultipleModulesTranslationTest(main: String) : BasicTest(main) {
         val dirName = getTestName(true)
         assert(dependencies != null) { "dependencies should not be null" }
 
-        for (moduleName in dependencies!!.keys) {
-            if (moduleName != MAIN_MODULE_NAME) {
+        for (moduleName in dependencies!!.keys.filter { !it.endsWith("-old") }) {
+            if (moduleName != MAIN_MODULE_NAME && !moduleName.endsWith("\$old")) {
                 result.add(getOutputFilePath(getModuleDirectoryName(dirName, moduleName), ecmaVersion))
             }
         }
