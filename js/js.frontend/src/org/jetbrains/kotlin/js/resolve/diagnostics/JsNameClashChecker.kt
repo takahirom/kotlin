@@ -48,6 +48,8 @@ class JsNameClashChecker : DeclarationChecker {
     }
 
     private fun checkDescriptor(descriptor: DeclarationDescriptor, declaration: KtDeclaration, diagnosticHolder: DiagnosticSink) {
+        if (descriptor is ConstructorDescriptor && descriptor.isPrimary) return
+
         val suggested = nameSuggestion.suggest(descriptor)!!
         if (suggested.stable && suggested.scope is ClassOrPackageFragmentDescriptor && isOpaque(suggested.descriptor)) {
             val scope = getScope(suggested.scope)
