@@ -18,13 +18,13 @@ package org.jetbrains.kotlin.resolve
 
 import com.intellij.util.containers.MultiMap
 import org.jetbrains.kotlin.descriptors.*
-import org.jetbrains.kotlin.descriptors.impl.TypeAliasConstructorDescriptor
 import org.jetbrains.kotlin.diagnostics.Errors
 import org.jetbrains.kotlin.idea.MainFunctionDetector
 import org.jetbrains.kotlin.name.Name
 import org.jetbrains.kotlin.psi.KtDeclaration
 import org.jetbrains.kotlin.resolve.calls.tower.getTypeAliasConstructors
 import org.jetbrains.kotlin.utils.addToStdlib.check
+import java.lang.IllegalStateException
 
 class OverloadResolver(
         private val trace: BindingTrace,
