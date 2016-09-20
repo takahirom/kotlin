@@ -85,6 +85,17 @@ fun extractClassMembers(
         collectSuperTypeEntries: Boolean = true,
         filter: ((KtNamedDeclaration) -> Boolean)? = null
 ): List<KotlinMemberInfo> {
+    fun KtClassOrObject.extractFromClassBody(filter: ((KtNamedDeclaration) -> Boolean)?, result: MutableCollection<KotlinMemberInfo>) {
+        declarations
+                .filter {
+                    it is KtNamedDeclaration
+                    && it !is KtConstructor<*>
+                    && !(it is KtObjectDeclaration && it.isCompanion())
+                    && (filter == null || filter(it))
+                }
+                .mapTo(result) { KotlinMemberInfo(it as KtNamedDeclaration) }
+    }
+
     if (aClass !is KtClassOrObject) return emptyList()
 
     val result = ArrayList<KotlinMemberInfo>()
@@ -98,8 +109,8 @@ fun extractClassMembers(
                     val classDescriptor = type?.constructor?.declarationDescriptor as? ClassDescriptor
                     classDescriptor?.source?.getPsi() as? KtClass
                 }
-                .filter { it.isInterface() }
-                .mapTo(result) { KotlinMemberInfo(it, true) }
+        .filter { it.isInterface() }
+        .mapTo(result) { KotlinMemberInfo(it, true) }
     }
 
     aClass.getPrimaryConstructor()
@@ -107,12 +118,8 @@ fun extractClassMembers(
             ?.filter { it.hasValOrVar() }
             ?.mapTo(result) { KotlinMemberInfo(it) }
 
-    aClass.declarations
-            .filter { it is KtNamedDeclaration
-                      && it !is KtConstructor<*>
-                      && !(it is KtObjectDeclaration && it.isCompanion())
-                      && (filter == null || filter(it)) }
-            .mapTo(result) { KotlinMemberInfo(it as KtNamedDeclaration) }
+    aClass.extractFromClassBody(filter, result)
+    (aClass as? KtClass)?.getCompanionObjects()?.firstOrNull()?.extractFromClassBody(filter, result)
 
     return result
 }

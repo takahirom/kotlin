@@ -34,20 +34,19 @@ import org.jetbrains.kotlin.descriptors.*
 import org.jetbrains.kotlin.idea.KotlinLanguage
 import org.jetbrains.kotlin.idea.codeInsight.shorten.addToShorteningWaitSet
 import org.jetbrains.kotlin.idea.core.dropDefaultValue
+import org.jetbrains.kotlin.idea.core.getOrCreateCompanionObject
 import org.jetbrains.kotlin.idea.core.replaced
 import org.jetbrains.kotlin.idea.intentions.setType
 import org.jetbrains.kotlin.idea.refactoring.createJavaField
 import org.jetbrains.kotlin.idea.refactoring.dropOverrideKeywordIfNecessary
+import org.jetbrains.kotlin.idea.refactoring.isCompanionMemberOf
 import org.jetbrains.kotlin.idea.refactoring.safeDelete.removeOverrideModifier
 import org.jetbrains.kotlin.idea.util.anonymousObjectSuperTypeOrNull
 import org.jetbrains.kotlin.idea.util.psi.patternMatching.KotlinPsiUnifier
 import org.jetbrains.kotlin.lexer.KtModifierKeywordToken
 import org.jetbrains.kotlin.lexer.KtTokens
 import org.jetbrains.kotlin.psi.*
-import org.jetbrains.kotlin.psi.psiUtil.allChildren
-import org.jetbrains.kotlin.psi.psiUtil.asAssignment
-import org.jetbrains.kotlin.psi.psiUtil.getStrictParentOfType
-import org.jetbrains.kotlin.psi.psiUtil.parentsWithSelf
+import org.jetbrains.kotlin.psi.psiUtil.*
 import org.jetbrains.kotlin.resolve.BindingContext
 import org.jetbrains.kotlin.resolve.DescriptorUtils
 import org.jetbrains.kotlin.resolve.calls.callUtil.getResolvedCall
@@ -385,6 +384,9 @@ class KotlinPullUpHelper(
                 val newType = substitutor.substitute(lightMethod.returnType)
                 val newField = createJavaField(member, data.targetClass)
                 newField.typeElement?.replace(elementFactory.createTypeElement(newType))
+                if (member.isCompanionMemberOf(data.sourceClass)) {
+                    newField.modifierList?.setModifierProperty(PsiModifier.STATIC, true)
+                }
                 if (member is KtParameter) {
                     (member.parent as? KtParameterList)?.removeParameter(member)
                 }
@@ -463,12 +465,15 @@ class KotlinPullUpHelper(
                 member is KtProperty -> member.mustBeAbstractInInterface()
                 else -> false
             }
+
+            val classToAddTo = if (member.isCompanionMemberOf(data.sourceClass)) data.targetClass.getOrCreateCompanionObject() else data.targetClass
+
             if (toAbstract) {
                 if (!originalIsAbstract) {
                     makeAbstract(memberCopy, data.memberDescriptors[member] as CallableMemberDescriptor, data.sourceToTargetClassSubstitutor, data.targetClass)
                 }
 
-                movedMember = doAddCallableMember(memberCopy, clashingSuper, data.targetClass)
+                movedMember = doAddCallableMember(memberCopy, clashingSuper, classToAddTo)
                 if (member.typeReference == null) {
                     movedMember.typeReference?.addToShorteningWaitSet()
                 }
@@ -476,7 +481,7 @@ class KotlinPullUpHelper(
                 removeOriginalMemberOrAddOverride(member)
             }
             else {
-                movedMember = doAddCallableMember(memberCopy, clashingSuper, data.targetClass)
+                movedMember = doAddCallableMember(memberCopy, clashingSuper, classToAddTo)
                 if (member is KtParameter && movedMember is KtParameter) {
                     member.valOrVarKeyword?.delete()
                     data.sourceClass.getSuperTypeEntryByDescriptor(data.targetClassDescriptor, data.sourceClassContext)?.let {
