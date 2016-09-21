@@ -20,6 +20,7 @@ import com.intellij.psi.*
 import com.intellij.psi.util.PsiTypesUtil
 import org.jetbrains.kotlin.java.model.*
 import org.jetbrains.kotlin.java.model.internal.JeElementRegistry
+import org.jetbrains.kotlin.java.model.internal.getTypeWithTypeParameters
 import org.jetbrains.kotlin.java.model.internal.isStatic
 import org.jetbrains.kotlin.java.model.types.JeMethodExecutableTypeMirror
 import org.jetbrains.kotlin.java.model.types.JeNoneType
@@ -88,7 +89,7 @@ fun PsiMethod.getReceiverTypeMirror(registry: JeElementRegistry): TypeMirror {
         val containingClass = containingClass
         if (containingClass != null && !containingClass.isStatic) {
             containingClass.containingClass?.let {
-                return PsiTypesUtil.getClassType(it).toJeType(manager, registry)
+                return it.getTypeWithTypeParameters().toJeType(manager, registry)
             }
         }
 
@@ -96,6 +97,6 @@ fun PsiMethod.getReceiverTypeMirror(registry: JeElementRegistry): TypeMirror {
     }
 
     val containingClass = containingClass ?: return JeNoneType
-    return PsiTypesUtil.getClassType(containingClass).toJeType(manager, registry)
+    return containingClass.getTypeWithTypeParameters().toJeType(manager, registry)
     
 }

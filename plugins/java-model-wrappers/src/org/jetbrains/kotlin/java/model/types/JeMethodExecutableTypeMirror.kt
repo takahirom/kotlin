@@ -25,6 +25,7 @@ import org.jetbrains.kotlin.annotation.processing.impl.toDisposable
 import org.jetbrains.kotlin.annotation.processing.impl.dispose
 import org.jetbrains.kotlin.java.model.elements.getReceiverTypeMirror
 import org.jetbrains.kotlin.java.model.internal.JeElementRegistry
+import org.jetbrains.kotlin.java.model.internal.getTypeWithTypeParameters
 import javax.lang.model.type.ExecutableType
 import javax.lang.model.type.TypeKind
 import javax.lang.model.type.TypeMirror

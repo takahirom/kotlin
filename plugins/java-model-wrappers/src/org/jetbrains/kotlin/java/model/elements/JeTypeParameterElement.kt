@@ -20,6 +20,7 @@ import com.intellij.psi.PsiTypeParameter
 import com.intellij.psi.util.PsiTypesUtil
 import org.jetbrains.kotlin.java.model.*
 import org.jetbrains.kotlin.java.model.internal.JeElementRegistry
+import org.jetbrains.kotlin.java.model.internal.getTypeWithTypeParameters
 import org.jetbrains.kotlin.java.model.types.toJeType
 import javax.lang.model.element.Element
 import javax.lang.model.element.ElementKind
@@ -37,7 +38,7 @@ class JeTypeParameterElement(
 
     override fun getKind() = ElementKind.TYPE_PARAMETER
 
-    override fun asType() = PsiTypesUtil.getClassType(psi).toJeType(psi.manager, registry)
+    override fun asType() = psi.getTypeWithTypeParameters().toJeType(psi.manager, registry)
 
     override fun <R : Any?, P : Any?> accept(v: ElementVisitor<R, P>, p: P) = v.visitTypeParameter(this, p)
 

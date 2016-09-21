@@ -141,10 +141,6 @@ class KotlinTypes(
     override fun directSupertypes(t: TypeMirror): List<TypeMirror> {
         if (t is NoType || t is ExecutableType) throw IllegalArgumentException("Invalid type: $t")
 
-        if (t is JeDeclaredType && t.psiType is PsiImmediateClassType) {
-            return t.psiClass.superTypes.map { it.toJeType(psiManager(), registry) }
-        }
-
         val psiType = (t as? JePsiType)?.psiType as? PsiClassType ?: return emptyList()
         return psiType.superTypes.map { it.toJeType(psiManager(), registry) }
     }
@@ -203,7 +199,7 @@ class KotlinTypes(
             i, t -> (t as? JePsiType)?.psiType ?: throw IllegalArgumentException("Invalid type argument #$i: $t") 
         }
 
-        val psiType = createDeclaredType(psiClass, typeArgs) ?: 
+        val psiType = createImmediateClassType(psiClass, typeArgs) ?:
                       throw IllegalStateException("Can't create declared type ($psiClass, $typeArgs)")
         return JeDeclaredType(psiType, psiClass, registry)
     }
@@ -235,7 +231,7 @@ class KotlinTypes(
             i, t -> (t as? JePsiType)?.psiType ?: throw IllegalArgumentException("Invalid type argument #$i: $t")
         }
 
-        val psiType = createDeclaredType(psiClass, typeArgs) ?:
+        val psiType = createImmediateClassType(psiClass, typeArgs) ?:
                       throw IllegalStateException("Can't create declared type ($psiClass, $typeArgs)")
         return JeDeclaredType(psiType, psiClass, registry, containing)
     }
