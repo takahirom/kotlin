@@ -5151,6 +5151,273 @@ public fun CharArray.sortedWith(comparator: Comparator<in Char>): List<Char> {
 }
 
 /**
+ * TODO
+ */
+@kotlin.jvm.JvmVersion
+@kotlin.internal.InlineOnly
+public inline fun <T> Array<out T>.contentEquals(other: Array<out T>): Boolean {
+    return Arrays.equals(this, other)
+}
+
+/**
+ * TODO
+ */
+@kotlin.jvm.JvmVersion
+@kotlin.internal.InlineOnly
+public inline fun ByteArray.contentEquals(other: ByteArray): Boolean {
+    return Arrays.equals(this, other)
+}
+
+/**
+ * TODO
+ */
+@kotlin.jvm.JvmVersion
+@kotlin.internal.InlineOnly
+public inline fun ShortArray.contentEquals(other: ShortArray): Boolean {
+    return Arrays.equals(this, other)
+}
+
+/**
+ * TODO
+ */
+@kotlin.jvm.JvmVersion
+@kotlin.internal.InlineOnly
+public inline fun IntArray.contentEquals(other: IntArray): Boolean {
+    return Arrays.equals(this, other)
+}
+
+/**
+ * TODO
+ */
+@kotlin.jvm.JvmVersion
+@kotlin.internal.InlineOnly
+public inline fun LongArray.contentEquals(other: LongArray): Boolean {
+    return Arrays.equals(this, other)
+}
+
+/**
+ * TODO
+ */
+@kotlin.jvm.JvmVersion
+@kotlin.internal.InlineOnly
+public inline fun FloatArray.contentEquals(other: FloatArray): Boolean {
+    return Arrays.equals(this, other)
+}
+
+/**
+ * TODO
+ */
+@kotlin.jvm.JvmVersion
+@kotlin.internal.InlineOnly
+public inline fun DoubleArray.contentEquals(other: DoubleArray): Boolean {
+    return Arrays.equals(this, other)
+}
+
+/**
+ * TODO
+ */
+@kotlin.jvm.JvmVersion
+@kotlin.internal.InlineOnly
+public inline fun BooleanArray.contentEquals(other: BooleanArray): Boolean {
+    return Arrays.equals(this, other)
+}
+
+/**
+ * TODO
+ */
+@kotlin.jvm.JvmVersion
+@kotlin.internal.InlineOnly
+public inline fun CharArray.contentEquals(other: CharArray): Boolean {
+    return Arrays.equals(this, other)
+}
+
+/**
+ * TODO
+ */
+@kotlin.jvm.JvmVersion
+public fun <T> Array<out T>.contentEquals(other: Array<out T>, deep: Boolean): Boolean {
+    return if (deep) Arrays.deepEquals(this, other) else Arrays.equals(this, other)
+}
+
+/**
+ * TODO
+ */
+@kotlin.jvm.JvmVersion
+@kotlin.internal.InlineOnly
+public inline fun <T> Array<out T>.contentHashCode(): Int {
+    return Arrays.hashCode(this)
+}
+
+/**
+ * TODO
+ */
+@kotlin.jvm.JvmVersion
+@kotlin.internal.InlineOnly
+public inline fun ByteArray.contentHashCode(): Int {
+    return Arrays.hashCode(this)
+}
+
+/**
+ * TODO
+ */
+@kotlin.jvm.JvmVersion
+@kotlin.internal.InlineOnly
+public inline fun ShortArray.contentHashCode(): Int {
+    return Arrays.hashCode(this)
+}
+
+/**
+ * TODO
+ */
+@kotlin.jvm.JvmVersion
+@kotlin.internal.InlineOnly
+public inline fun IntArray.contentHashCode(): Int {
+    return Arrays.hashCode(this)
+}
+
+/**
+ * TODO
+ */
+@kotlin.jvm.JvmVersion
+@kotlin.internal.InlineOnly
+public inline fun LongArray.contentHashCode(): Int {
+    return Arrays.hashCode(this)
+}
+
+/**
+ * TODO
+ */
+@kotlin.jvm.JvmVersion
+@kotlin.internal.InlineOnly
+public inline fun FloatArray.contentHashCode(): Int {
+    return Arrays.hashCode(this)
+}
+
+/**
+ * TODO
+ */
+@kotlin.jvm.JvmVersion
+@kotlin.internal.InlineOnly
+public inline fun DoubleArray.contentHashCode(): Int {
+    return Arrays.hashCode(this)
+}
+
+/**
+ * TODO
+ */
+@kotlin.jvm.JvmVersion
+@kotlin.internal.InlineOnly
+public inline fun BooleanArray.contentHashCode(): Int {
+    return Arrays.hashCode(this)
+}
+
+/**
+ * TODO
+ */
+@kotlin.jvm.JvmVersion
+@kotlin.internal.InlineOnly
+public inline fun CharArray.contentHashCode(): Int {
+    return Arrays.hashCode(this)
+}
+
+/**
+ * TODO
+ */
+@kotlin.jvm.JvmVersion
+public fun <T> Array<out T>.contentHashCode(deep: Boolean): Int {
+    return if (deep) Arrays.deepHashCode(this) else Arrays.hashCode(this)
+}
+
+/**
+ * TODO
+ */
+@kotlin.jvm.JvmVersion
+@kotlin.internal.InlineOnly
+public inline fun <T> Array<out T>.contentToString(): String {
+    return Arrays.toString(this)
+}
+
+/**
+ * TODO
+ */
+@kotlin.jvm.JvmVersion
+@kotlin.internal.InlineOnly
+public inline fun ByteArray.contentToString(): String {
+    return Arrays.toString(this)
+}
+
+/**
+ * TODO
+ */
+@kotlin.jvm.JvmVersion
+@kotlin.internal.InlineOnly
+public inline fun ShortArray.contentToString(): String {
+    return Arrays.toString(this)
+}
+
+/**
+ * TODO
+ */
+@kotlin.jvm.JvmVersion
+@kotlin.internal.InlineOnly
+public inline fun IntArray.contentToString(): String {
+    return Arrays.toString(this)
+}
+
+/**
+ * TODO
+ */
+@kotlin.jvm.JvmVersion
+@kotlin.internal.InlineOnly
+public inline fun LongArray.contentToString(): String {
+    return Arrays.toString(this)
+}
+
+/**
+ * TODO
+ */
+@kotlin.jvm.JvmVersion
+@kotlin.internal.InlineOnly
+public inline fun FloatArray.contentToString(): String {
+    return Arrays.toString(this)
+}
+
+/**
+ * TODO
+ */
+@kotlin.jvm.JvmVersion
+@kotlin.internal.InlineOnly
+public inline fun DoubleArray.contentToString(): String {
+    return Arrays.toString(this)
+}
+
+/**
+ * TODO
+ */
+@kotlin.jvm.JvmVersion
+@kotlin.internal.InlineOnly
+public inline fun BooleanArray.contentToString(): String {
+    return Arrays.toString(this)
+}
+
+/**
+ * TODO
+ */
+@kotlin.jvm.JvmVersion
+@kotlin.internal.InlineOnly
+public inline fun CharArray.contentToString(): String {
+    return Arrays.toString(this)
+}
+
+/**
+ * TODO
+ */
+@kotlin.jvm.JvmVersion
+public fun <T> Array<out T>.contentToString(deep: Boolean): String {
+    return if (deep) Arrays.deepToString(this) else Arrays.toString(this)
+}
+
+/**
  * Returns the range of valid indices for the array.
  */
 public val <T> Array<out T>.indices: IntRange

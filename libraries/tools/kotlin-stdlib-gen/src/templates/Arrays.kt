@@ -44,6 +44,69 @@ fun arrays(): List<GenericFunction> {
         }
     }
 
+    templates add f("contentEquals(other: SELF)") {
+        only(ArraysOfObjects, ArraysOfPrimitives)
+        jvmOnly(true)
+        inline(Inline.Only)
+        doc { "TODO" }
+        returns("Boolean")
+        body {
+            "return Arrays.equals(this, other)"
+        }
+    }
+
+    templates add f("contentEquals(other: SELF, deep: Boolean)") {
+        only(ArraysOfObjects)
+        jvmOnly(true)
+        doc { "TODO" }
+        returns("Boolean")
+        body {
+            "return if (deep) Arrays.deepEquals(this, other) else Arrays.equals(this, other)"
+        }
+    }
+
+    templates add f("contentToString()") {
+        only(ArraysOfObjects, ArraysOfPrimitives)
+        jvmOnly(true)
+        inline(Inline.Only)
+        doc { "TODO" }
+        returns("String")
+        body {
+            "return Arrays.toString(this)"
+        }
+    }
+
+    templates add f("contentToString(deep: Boolean)") {
+        only(ArraysOfObjects)
+        jvmOnly(true)
+        doc { "TODO" }
+        returns("String")
+        body {
+            "return if (deep) Arrays.deepToString(this) else Arrays.toString(this)"
+        }
+    }
+
+    templates add f("contentHashCode()") {
+        only(ArraysOfObjects, ArraysOfPrimitives)
+        jvmOnly(true)
+        inline(Inline.Only)
+        doc { "TODO" }
+        returns("Int")
+        body {
+            "return Arrays.hashCode(this)"
+        }
+    }
+
+    templates add f("contentHashCode(deep: Boolean)") {
+        only(ArraysOfObjects)
+        jvmOnly(true)
+        doc { "TODO" }
+        returns("Int")
+        body {
+            "return if (deep) Arrays.deepHashCode(this) else Arrays.hashCode(this)"
+        }
+    }
+
     templates addAll PrimitiveType.defaultPrimitives.map { primitive ->
         val arrayType = primitive.name + "Array"
         f("to$arrayType()") {
