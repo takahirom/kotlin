@@ -43,7 +43,7 @@ abstract class MultipleModulesTranslationTest(main: String) : BasicTest(main) {
 
         // KT-7428: !! is necessary here
         for ((moduleName, dependencies) in dependencies!!) {
-            translateModule(dirName, filePath, moduleName.removeSuffix(OLD_MODULE_SUFFIX), dependencies)
+            translateModule(dirName, filePath, moduleName, dependencies)
         }
 
         val filename = getInputFilePath(getModuleDirectoryName(dirName, MAIN_MODULE_NAME) + File.separator + MAIN_MODULE_NAME + ".kt")
@@ -64,7 +64,7 @@ abstract class MultipleModulesTranslationTest(main: String) : BasicTest(main) {
         BasicTest.DEFAULT_ECMA_VERSIONS.forEach { version ->
             val libraries = arrayListOf<String>()
             for (dependencyName in dependencies) {
-                val moduleDir = getModuleDirectoryName(dirName, dependencyName.removeSuffix(OLD_MODULE_SUFFIX))
+                val moduleDir = getModuleDirectoryName(dirName, dependencyName)
                 libraries.add(getMetaFileOutputPath(moduleDir, version))
             }
             generateJavaScriptFiles(fullFilePaths, moduleDirectoryName, MainCallParameters.noCall(), version,
@@ -95,8 +95,8 @@ abstract class MultipleModulesTranslationTest(main: String) : BasicTest(main) {
         val dirName = getTestName(true)
         assert(dependencies != null) { "dependencies should not be null" }
 
-        for (moduleName in dependencies!!.keys.filter { !it.endsWith("-old") }) {
-            if (moduleName != MAIN_MODULE_NAME && !moduleName.endsWith("\$old")) {
+        for (moduleName in dependencies!!.keys.filter { !it.endsWith(OLD_MODULE_SUFFIX) }) {
+            if (moduleName != MAIN_MODULE_NAME && !moduleName.endsWith(OLD_MODULE_SUFFIX)) {
                 result.add(getOutputFilePath(getModuleDirectoryName(dirName, moduleName), ecmaVersion))
             }
         }

@@ -15,7 +15,7 @@ class Derived2 : A, B {
 // unique identifiers to non-public declarations. However, we don't see any way of doing such test so that
 // it won't report false positives eventually. So be patient and just update this test whenever you changed
 // algorithm of assigning unique identifiers.
-// Please, check thet A.foo and B.foo have different JS names.
+// Please, check that A.foo and B.foo have different JS names.
 private fun checkJsNames(o: dynamic): Boolean = "foo_2pru9n\$_0" in o && "foo_2psha1\$_0" in o
 
 fun box(): String {
