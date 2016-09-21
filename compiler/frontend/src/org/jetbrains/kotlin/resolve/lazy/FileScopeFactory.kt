@@ -16,6 +16,7 @@
 
 package org.jetbrains.kotlin.resolve.lazy
 
+import org.jetbrains.kotlin.config.LanguageVersionSettings
 import org.jetbrains.kotlin.descriptors.*
 import org.jetbrains.kotlin.descriptors.annotations.Annotations
 import org.jetbrains.kotlin.incremental.components.LookupLocation
@@ -48,7 +49,8 @@ class FileScopeFactory(
         private val moduleDescriptor: ModuleDescriptor,
         private val qualifiedExpressionResolver: QualifiedExpressionResolver,
         private val bindingTrace: BindingTrace,
-        private val ktImportsFactory: KtImportsFactory
+        private val ktImportsFactory: KtImportsFactory,
+        private val languageVersionSettings: LanguageVersionSettings
 ) {
     private val defaultImports by storageManager.createLazyValue {
         ktImportsFactory.createImportDirectives(moduleDescriptor.defaultImports)
@@ -84,7 +86,8 @@ class FileScopeFactory(
                               ?: error("Could not find fragment ${file.packageFqName} for file ${file.name}")
 
         fun createImportResolver(indexedImports: IndexedImports, trace: BindingTrace, excludedImports: List<FqName>? = null)
-                = LazyImportResolver(storageManager, qualifiedExpressionResolver, moduleDescriptor, indexedImports, aliasImportNames concat excludedImports, trace, packageFragment)
+                = LazyImportResolver(storageManager, qualifiedExpressionResolver, moduleDescriptor, languageVersionSettings, indexedImports,
+                                     aliasImportNames concat excludedImports, trace, packageFragment)
 
         val explicitImportResolver = createImportResolver(ExplicitImportsIndexed(imports), bindingTrace)
         val allUnderImportResolver = createImportResolver(AllUnderImportsIndexed(imports), bindingTrace) // TODO: should we count excludedImports here also?

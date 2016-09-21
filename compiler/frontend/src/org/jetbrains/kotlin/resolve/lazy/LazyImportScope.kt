@@ -19,6 +19,7 @@ package org.jetbrains.kotlin.resolve.lazy
 import com.google.common.collect.HashMultimap
 import com.google.common.collect.ImmutableListMultimap
 import com.google.common.collect.ListMultimap
+import org.jetbrains.kotlin.config.LanguageVersionSettings
 import org.jetbrains.kotlin.descriptors.*
 import org.jetbrains.kotlin.diagnostics.Errors
 import org.jetbrains.kotlin.incremental.KotlinLookupLocation
@@ -27,9 +28,7 @@ import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.name.Name
 import org.jetbrains.kotlin.psi.KtImportDirective
 import org.jetbrains.kotlin.psi.KtPsiUtil
-import org.jetbrains.kotlin.resolve.BindingTrace
-import org.jetbrains.kotlin.resolve.PlatformTypesMappedToKotlinChecker
-import org.jetbrains.kotlin.resolve.QualifiedExpressionResolver
+import org.jetbrains.kotlin.resolve.*
 import org.jetbrains.kotlin.resolve.scopes.DescriptorKindFilter
 import org.jetbrains.kotlin.resolve.scopes.ImportingScope
 import org.jetbrains.kotlin.storage.StorageManager
@@ -74,6 +73,7 @@ class LazyImportResolver(
         val storageManager: StorageManager,
         val qualifiedExpressionResolver: QualifiedExpressionResolver,
         val moduleDescriptor: ModuleDescriptor,
+        val languageVersionSettings: LanguageVersionSettings,
         val indexedImports: IndexedImports,
         excludedImportNames: Collection<FqName>,
         private val traceForImportResolve: BindingTrace,
@@ -177,6 +177,9 @@ class LazyImportScope(
 
     private fun isClassifierVisible(descriptor: ClassifierDescriptor): Boolean {
         if (filteringKind == FilteringKind.ALL) return true
+
+        if (descriptor.isHiddenInResolution(importResolver.languageVersionSettings)) return false
+
         val visibility = (descriptor as DeclarationDescriptorWithVisibility).visibility
         val includeVisible = filteringKind == FilteringKind.VISIBLE_CLASSES
         if (!visibility.mustCheckInImports()) return includeVisible
