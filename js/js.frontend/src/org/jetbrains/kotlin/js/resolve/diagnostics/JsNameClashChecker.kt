@@ -22,11 +22,11 @@ import org.jetbrains.kotlin.diagnostics.DiagnosticSink
 import org.jetbrains.kotlin.js.naming.NameSuggestion
 import org.jetbrains.kotlin.js.translate.utils.AnnotationsUtils
 import org.jetbrains.kotlin.psi.KtDeclaration
-import org.jetbrains.kotlin.psi.KtProperty
 import org.jetbrains.kotlin.resolve.BindingContext
 import org.jetbrains.kotlin.resolve.DeclarationChecker
 import org.jetbrains.kotlin.resolve.DescriptorUtils
 import org.jetbrains.kotlin.resolve.descriptorUtil.isExtension
+import org.jetbrains.kotlin.resolve.descriptorUtil.isExtensionProperty
 import org.jetbrains.kotlin.resolve.scopes.MemberScope
 
 class JsNameClashChecker : DeclarationChecker {
@@ -42,7 +42,9 @@ class JsNameClashChecker : DeclarationChecker {
             bindingContext: BindingContext,
             languageFeatureSettings: LanguageFeatureSettings
     ) {
-        if (declaration !is KtProperty || !descriptor.isExtension) {
+        // We don't generate JS properties for extension properties, we generate methods instead, so in this case
+        // check name clash only for accessors, not properties
+        if (!descriptor.isExtensionProperty) {
             checkDescriptor(descriptor, declaration, diagnosticHolder)
         }
     }
@@ -51,7 +53,7 @@ class JsNameClashChecker : DeclarationChecker {
         if (descriptor is ConstructorDescriptor && descriptor.isPrimary) return
 
         val suggested = nameSuggestion.suggest(descriptor)!!
-        if (suggested.stable && suggested.scope is ClassOrPackageFragmentDescriptor && isOpaque(suggested.descriptor)) {
+        if (suggested.stable && suggested.scope is ClassOrPackageFragmentDescriptor && presentsInGeneratedCode(suggested.descriptor)) {
             val scope = getScope(suggested.scope)
             val name = suggested.names.last()
             val existing = scope[name]
@@ -119,7 +121,7 @@ class JsNameClashChecker : DeclarationChecker {
         }
 
         val fqn = nameSuggestion.suggest(descriptor) ?: return
-        if (fqn.stable && isOpaque(fqn.descriptor)) {
+        if (fqn.stable && presentsInGeneratedCode(fqn.descriptor)) {
             target[fqn.names.last()] = fqn.descriptor
             (fqn.descriptor as? CallableMemberDescriptor)?.let { checkOverrideClashes(it, target) }
         }
@@ -146,6 +148,6 @@ class JsNameClashChecker : DeclarationChecker {
         }
     }
 
-    private fun isOpaque(descriptor: DeclarationDescriptor) =
+    private fun presentsInGeneratedCode(descriptor: DeclarationDescriptor) =
             !AnnotationsUtils.isNativeObject(descriptor) && !AnnotationsUtils.isLibraryObject(descriptor)
 }
