@@ -16,6 +16,7 @@
 
 package org.jetbrains.kotlin.annotation
 
+import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.vfs.StandardFileSystems
 import com.intellij.psi.*
@@ -34,7 +35,6 @@ import org.jetbrains.kotlin.fileClasses.NoResolveFileClassesProvider
 import org.jetbrains.kotlin.incremental.components.SourceRetentionAnnotationHandler
 import org.jetbrains.kotlin.java.model.elements.JeTypeElement
 import org.jetbrains.kotlin.load.java.JvmAbi
-import org.jetbrains.kotlin.load.kotlin.incremental.components.IncrementalCompilationComponents
 import org.jetbrains.kotlin.psi.KtFile
 import org.jetbrains.kotlin.resolve.BindingTrace
 import org.jetbrains.kotlin.resolve.jvm.extensions.AnalysisCompletedHandlerExtension
@@ -260,8 +260,11 @@ abstract class AbstractAnnotationProcessingExtension(
             appendJavaSourceRootsHandler(listOf(generatedSourcesOutputDir))
         }
         
-        // Update the platform caches
-        (PsiManager.getInstance(project).modificationTracker as? PsiModificationTrackerImpl)?.incCounter()
+        // Update the platform caches (see KotlinJavaPsiFacade)
+        val modificationTracker = PsiManager.getInstance(project).modificationTracker as? PsiModificationTrackerImpl
+        if (modificationTracker != null) {
+            ApplicationManager.getApplication().runWriteAction { modificationTracker.incCounter() }
+        }
         
         // Find generated files
         val localFileSystem = StandardFileSystems.local()

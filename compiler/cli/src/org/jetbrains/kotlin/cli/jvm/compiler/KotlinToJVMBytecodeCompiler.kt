@@ -16,6 +16,7 @@
 
 package org.jetbrains.kotlin.cli.jvm.compiler
 
+import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.util.io.JarUtil
 import com.intellij.psi.PsiManager
 import com.intellij.psi.impl.PsiModificationTrackerImpl
@@ -139,7 +140,10 @@ object KotlinToJVMBytecodeCompiler {
             }
 
             // Clear package caches (see KotlinJavaPsiFacade)
-            (PsiManager.getInstance(environment.project).modificationTracker as? PsiModificationTrackerImpl)?.incCounter()
+            val modificationTracker = PsiManager.getInstance(environment.project).modificationTracker as? PsiModificationTrackerImpl
+            if (modificationTracker != null) {
+                ApplicationManager.getApplication().runWriteAction { modificationTracker.incCounter() }
+            }
             
             // Clear all diagnostic messages
             configuration[CLIConfigurationKeys.MESSAGE_COLLECTOR_KEY]?.clear()
