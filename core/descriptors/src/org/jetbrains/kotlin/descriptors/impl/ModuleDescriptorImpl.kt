@@ -17,14 +17,14 @@
 package org.jetbrains.kotlin.descriptors.impl
 
 import org.jetbrains.kotlin.builtins.KotlinBuiltIns
-import org.jetbrains.kotlin.descriptors.ModuleDescriptor
-import org.jetbrains.kotlin.descriptors.ModuleParameters
-import org.jetbrains.kotlin.descriptors.PackageFragmentProvider
-import org.jetbrains.kotlin.descriptors.PackageViewDescriptor
+import org.jetbrains.kotlin.descriptors.*
 import org.jetbrains.kotlin.descriptors.annotations.Annotations
 import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.name.Name
+import org.jetbrains.kotlin.resolve.descriptorUtil.resolveTopLevelClass
+import org.jetbrains.kotlin.resolve.scopes.DescriptorKindFilter
 import org.jetbrains.kotlin.storage.StorageManager
+import org.jetbrains.kotlin.storage.getValue
 import org.jetbrains.kotlin.utils.sure
 import java.lang.IllegalArgumentException
 
@@ -46,6 +46,14 @@ class ModuleDescriptorImpl @JvmOverloads constructor(
 
     private val packages = storageManager.createMemoizedFunction<FqName, PackageViewDescriptor> {
         fqName: FqName -> LazyPackageViewDescriptorImpl(this, fqName, storageManager)
+    }
+
+    override val builtInTypeAliases by storageManager.createLazyValue {
+
+        val packages = listOf(KotlinBuiltIns.BUILT_INS_PACKAGE_FQ_NAME, KotlinBuiltIns.COLLECTIONS_PACKAGE_FQ_NAME)
+        val typealiases = packages.flatMap { getPackage(it).memberScope.getContributedDescriptors(DescriptorKindFilter.TYPE_ALIASES).filterIsInstance<TypeAliasDescriptor>() }
+
+        typealiases
     }
 
     override fun getPackage(fqName: FqName): PackageViewDescriptor = packages(fqName)

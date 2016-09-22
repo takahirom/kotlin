@@ -27,6 +27,7 @@ interface ModuleDescriptor : DeclarationDescriptor, ModuleParameters {
     override fun getContainingDeclaration(): DeclarationDescriptor? = null
 
     val builtIns: KotlinBuiltIns
+    val builtInTypeAliases: List<TypeAliasDescriptor>
 
     fun shouldSeeInternalsOf(targetModule: ModuleDescriptor): Boolean
 

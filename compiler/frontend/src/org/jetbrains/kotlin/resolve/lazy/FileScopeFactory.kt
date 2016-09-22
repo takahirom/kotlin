@@ -79,6 +79,8 @@ class FileScopeFactory(
             allImplicitImports.filter { it.isAllUnder || it.importedFqName !in aliasImportNames }
         }
 
+        val builtinAliases = moduleDescriptor.builtInTypeAliases
+
         val packageView = moduleDescriptor.getPackage(file.packageFqName)
         val packageFragment = topLevelDescriptorProvider.getPackageFragment(file.packageFqName)
                               ?: error("Could not find fragment ${file.packageFqName} for file ${file.name}")

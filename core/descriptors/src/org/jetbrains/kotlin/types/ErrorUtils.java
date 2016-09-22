@@ -139,6 +139,12 @@ public class ErrorUtils {
             public KotlinBuiltIns getBuiltIns() {
                 return DefaultBuiltIns.getInstance();
             }
+
+            @NotNull
+            @Override
+            public List<TypeAliasDescriptor> getBuiltInTypeAliases() {
+                return emptyList();
+            }
         };
     }
 
