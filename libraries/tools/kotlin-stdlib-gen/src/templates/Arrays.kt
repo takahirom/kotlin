@@ -48,20 +48,36 @@ fun arrays(): List<GenericFunction> {
         only(ArraysOfObjects, ArraysOfPrimitives)
         jvmOnly(true)
         inline(Inline.Only)
-        doc { "TODO" }
+        infix(true)
+        doc {
+            """
+            Returns `true` if the two specified arrays are *structurally* equal to one another,
+            i.e. contain the same number of the same elements in the same order.
+            """
+        }
         returns("Boolean")
         body {
             "return Arrays.equals(this, other)"
         }
     }
 
-    templates add f("contentEquals(other: SELF, deep: Boolean)") {
+    templates add f("contentDeepEquals(other: SELF)") {
         only(ArraysOfObjects)
         jvmOnly(true)
-        doc { "TODO" }
+        inline(Inline.Only)
+        infix(true)
+        doc {
+            """
+            Returns `true` if the two specified arrays are *deeply* equal to one another,
+            i.e. contain the same number of the same elements in the same order.
+
+            If two corresponding elements are nested arrays, they are also compared deeply.
+            If any of arrays contains itself on any nesting level the behavior is undefined.
+            """
+        }
         returns("Boolean")
         body {
-            "return if (deep) Arrays.deepEquals(this, other) else Arrays.equals(this, other)"
+            "return Arrays.deepEquals(this, other)"
         }
     }
 
@@ -69,20 +85,27 @@ fun arrays(): List<GenericFunction> {
         only(ArraysOfObjects, ArraysOfPrimitives)
         jvmOnly(true)
         inline(Inline.Only)
-        doc { "TODO" }
+        doc { "Returns a string representation of the contents of the specified array as if it is [List]." }
         returns("String")
         body {
             "return Arrays.toString(this)"
         }
     }
 
-    templates add f("contentToString(deep: Boolean)") {
+    templates add f("contentDeepToString()") {
         only(ArraysOfObjects)
         jvmOnly(true)
-        doc { "TODO" }
+        inline(Inline.Only)
+        doc {
+            """
+            Returns a string representation of the contents of this array as if it is [List].
+
+            Nested arrays are treated as lists too.
+            """
+        }
         returns("String")
         body {
-            "return if (deep) Arrays.deepToString(this) else Arrays.toString(this)"
+            "return Arrays.deepToString(this)"
         }
     }
 
@@ -90,20 +113,30 @@ fun arrays(): List<GenericFunction> {
         only(ArraysOfObjects, ArraysOfPrimitives)
         jvmOnly(true)
         inline(Inline.Only)
-        doc { "TODO" }
+        doc {
+            "Returns a hash code based on the contents of this array as if it is [List]."
+        }
         returns("Int")
         body {
             "return Arrays.hashCode(this)"
         }
     }
 
-    templates add f("contentHashCode(deep: Boolean)") {
+    templates add f("contentDeepHashCode()") {
         only(ArraysOfObjects)
         jvmOnly(true)
-        doc { "TODO" }
+        inline(Inline.Only)
+        doc {
+            """
+            Returns a hash code based on the contents of this array as if it is [List].
+
+            Nested arrays are treated as lists too.
+            If any of arrays contains itself on any nesting level the behavior is undefined.
+            """
+        }
         returns("Int")
         body {
-            "return if (deep) Arrays.deepHashCode(this) else Arrays.hashCode(this)"
+            "return Arrays.deepHashCode(this)"
         }
     }
 
