@@ -77,6 +77,13 @@ public class ErrorUtils {
 
             @NotNull
             @Override
+            public List<FqName> getEffectivelyExcludedImports() {
+                return emptyList();
+            }
+
+
+            @NotNull
+            @Override
             public Annotations getAnnotations() {
                 return Annotations.Companion.getEMPTY();
             }
@@ -140,11 +147,6 @@ public class ErrorUtils {
                 return DefaultBuiltIns.getInstance();
             }
 
-            @NotNull
-            @Override
-            public List<TypeAliasDescriptor> getBuiltInTypeAliases() {
-                return emptyList();
-            }
         };
     }
 

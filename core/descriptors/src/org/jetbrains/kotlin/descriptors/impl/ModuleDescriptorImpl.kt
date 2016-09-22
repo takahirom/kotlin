@@ -21,10 +21,13 @@ import org.jetbrains.kotlin.descriptors.*
 import org.jetbrains.kotlin.descriptors.annotations.Annotations
 import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.name.Name
+import org.jetbrains.kotlin.name.isSubpackageOf
+import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 import org.jetbrains.kotlin.resolve.descriptorUtil.resolveTopLevelClass
 import org.jetbrains.kotlin.resolve.scopes.DescriptorKindFilter
 import org.jetbrains.kotlin.storage.StorageManager
 import org.jetbrains.kotlin.storage.getValue
+import org.jetbrains.kotlin.utils.addToStdlib.check
 import org.jetbrains.kotlin.utils.sure
 import java.lang.IllegalArgumentException
 
@@ -48,12 +51,14 @@ class ModuleDescriptorImpl @JvmOverloads constructor(
         fqName: FqName -> LazyPackageViewDescriptorImpl(this, fqName, storageManager)
     }
 
-    override val builtInTypeAliases by storageManager.createLazyValue {
+    override val effectivelyExcludedImports: List<FqName> by storageManager.createLazyValue {
+        val packagesWithAliases = listOf(KotlinBuiltIns.BUILT_INS_PACKAGE_FQ_NAME, KotlinBuiltIns.COLLECTIONS_PACKAGE_FQ_NAME)
+        val builtinTypeAliases = packagesWithAliases.flatMap { getPackage(it).memberScope.getContributedDescriptors(DescriptorKindFilter.TYPE_ALIASES).filterIsInstance<TypeAliasDescriptor>() }
 
-        val packages = listOf(KotlinBuiltIns.BUILT_INS_PACKAGE_FQ_NAME, KotlinBuiltIns.COLLECTIONS_PACKAGE_FQ_NAME)
-        val typealiases = packages.flatMap { getPackage(it).memberScope.getContributedDescriptors(DescriptorKindFilter.TYPE_ALIASES).filterIsInstance<TypeAliasDescriptor>() }
+        val nonKotlinDefaultImportedPackages = defaultImports.filter { it.isAllUnder }.mapNotNull { it.fqnPart().check { !it.isSubpackageOf(KotlinBuiltIns.BUILT_INS_PACKAGE_FQ_NAME) } }
+        val nonKotlinAliasedTypeFqNames = builtinTypeAliases.mapNotNull { it.expandedType.constructor.declarationDescriptor?.fqNameSafe }.filter { nonKotlinDefaultImportedPackages.any(it::isSubpackageOf) }
 
-        typealiases
+        excludedImports + nonKotlinAliasedTypeFqNames
     }
 
     override fun getPackage(fqName: FqName): PackageViewDescriptor = packages(fqName)

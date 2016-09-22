@@ -27,7 +27,6 @@ interface ModuleDescriptor : DeclarationDescriptor, ModuleParameters {
     override fun getContainingDeclaration(): DeclarationDescriptor? = null
 
     val builtIns: KotlinBuiltIns
-    val builtInTypeAliases: List<TypeAliasDescriptor>
 
     fun shouldSeeInternalsOf(targetModule: ModuleDescriptor): Boolean
 
@@ -46,6 +45,8 @@ interface ModuleDescriptor : DeclarationDescriptor, ModuleParameters {
     fun <T> getCapability(capability: Capability<T>): T?
 
     class Capability<T>(val name: String)
+
+    val effectivelyExcludedImports: List<FqName>
 }
 
 interface ModuleParameters {

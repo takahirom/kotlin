@@ -82,10 +82,6 @@ class FileScopeFactory(
             allImplicitImports.filter { it.isAllUnder || it.importedFqName !in aliasImportNames }
         }
 
-        val builtinAliases = moduleDescriptor.builtInTypeAliases
-        val nonKotlinDefaultImports = defaultImportsFiltered.mapNotNull { it.importedFqName?.check { !it.isSubpackageOf(KotlinBuiltIns.BUILT_INS_PACKAGE_FQ_NAME) } }
-        val aliasedNonKotlinTypeFqNames = builtinAliases.mapNotNull { it.expandedType.constructor.declarationDescriptor?.fqNameSafe }.filter { nonKotlinDefaultImports.any(it::isSubpackageOf) }
-
         val packageView = moduleDescriptor.getPackage(file.packageFqName)
         val packageFragment = topLevelDescriptorProvider.getPackageFragment(file.packageFqName)
                               ?: error("Could not find fragment ${file.packageFqName} for file ${file.name}")
@@ -97,7 +93,7 @@ class FileScopeFactory(
         val allUnderImportResolver = createImportResolver(AllUnderImportsIndexed(imports), bindingTrace) // TODO: should we count excludedImports here also?
 
         val defaultExplicitImportResolver = createImportResolver(ExplicitImportsIndexed(defaultImportsFiltered), tempTrace)
-        val defaultAllUnderImportResolver = createImportResolver(AllUnderImportsIndexed(defaultImportsFiltered), tempTrace, moduleDescriptor.excludedImports + aliasedNonKotlinTypeFqNames)
+        val defaultAllUnderImportResolver = createImportResolver(AllUnderImportsIndexed(defaultImportsFiltered), tempTrace, moduleDescriptor.effectivelyExcludedImports)
 
         val dummyContainerDescriptor = DummyContainerDescriptor(file, packageFragment)
 
