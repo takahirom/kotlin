@@ -16,11 +16,13 @@
 
 package org.jetbrains.kotlin.resolve.lazy
 
+import org.jetbrains.kotlin.builtins.KotlinBuiltIns
 import org.jetbrains.kotlin.descriptors.*
 import org.jetbrains.kotlin.descriptors.annotations.Annotations
 import org.jetbrains.kotlin.incremental.components.LookupLocation
 import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.name.Name
+import org.jetbrains.kotlin.name.isSubpackageOf
 import org.jetbrains.kotlin.psi.KtFile
 import org.jetbrains.kotlin.psi.KtImportDirective
 import org.jetbrains.kotlin.psi.KtImportsFactory
@@ -28,6 +30,7 @@ import org.jetbrains.kotlin.resolve.BindingTrace
 import org.jetbrains.kotlin.resolve.ImportPath
 import org.jetbrains.kotlin.resolve.QualifiedExpressionResolver
 import org.jetbrains.kotlin.resolve.TemporaryBindingTrace
+import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 import org.jetbrains.kotlin.resolve.scopes.DescriptorKindFilter
 import org.jetbrains.kotlin.resolve.scopes.ImportingScope
 import org.jetbrains.kotlin.resolve.scopes.LexicalScope
@@ -80,6 +83,8 @@ class FileScopeFactory(
         }
 
         val builtinAliases = moduleDescriptor.builtInTypeAliases
+        val nonKotlinDefaultImports = defaultImportsFiltered.mapNotNull { it.importedFqName?.check { !it.isSubpackageOf(KotlinBuiltIns.BUILT_INS_PACKAGE_FQ_NAME) } }
+        val aliasedNonKotlinTypeFqNames = builtinAliases.mapNotNull { it.expandedType.constructor.declarationDescriptor?.fqNameSafe }.filter { nonKotlinDefaultImports.any(it::isSubpackageOf) }
 
         val packageView = moduleDescriptor.getPackage(file.packageFqName)
         val packageFragment = topLevelDescriptorProvider.getPackageFragment(file.packageFqName)
@@ -92,7 +97,7 @@ class FileScopeFactory(
         val allUnderImportResolver = createImportResolver(AllUnderImportsIndexed(imports), bindingTrace) // TODO: should we count excludedImports here also?
 
         val defaultExplicitImportResolver = createImportResolver(ExplicitImportsIndexed(defaultImportsFiltered), tempTrace)
-        val defaultAllUnderImportResolver = createImportResolver(AllUnderImportsIndexed(defaultImportsFiltered), tempTrace, moduleDescriptor.excludedImports)
+        val defaultAllUnderImportResolver = createImportResolver(AllUnderImportsIndexed(defaultImportsFiltered), tempTrace, moduleDescriptor.excludedImports + aliasedNonKotlinTypeFqNames)
 
         val dummyContainerDescriptor = DummyContainerDescriptor(file, packageFragment)
 
