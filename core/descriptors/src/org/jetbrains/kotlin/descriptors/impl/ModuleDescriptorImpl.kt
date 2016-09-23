@@ -52,12 +52,22 @@ class ModuleDescriptorImpl @JvmOverloads constructor(
     }
 
     override val effectivelyExcludedImports: List<FqName> by storageManager.createLazyValue {
+        println("!!Calculating effectivelyExcludedImports for module $id")
         val packagesWithAliases = listOf(KotlinBuiltIns.BUILT_INS_PACKAGE_FQ_NAME, KotlinBuiltIns.COLLECTIONS_PACKAGE_FQ_NAME)
-        val builtinTypeAliases = packagesWithAliases.flatMap { getPackage(it).memberScope.getContributedDescriptors(DescriptorKindFilter.TYPE_ALIASES).filterIsInstance<TypeAliasDescriptor>() }
+        val dependencies = this.dependencies.sure { "Dependencies of module $id were not set" }
+        println("!!Dependencies: ${dependencies.allDependencies.joinToString { it.id }}")
+        val builtinTypeAliases = dependencies.allDependencies.filter { it != this }.flatMap {
+            println("!!Searching aliases in module ${it.id}, is equal to self: ${it == this@ModuleDescriptorImpl}")
+            System.out.flush()
+            packagesWithAliases.map(it::getPackage).flatMap {
+                it.memberScope.getContributedDescriptors(DescriptorKindFilter.TYPE_ALIASES).filterIsInstance<TypeAliasDescriptor>()
+            }
+        }
 
         val nonKotlinDefaultImportedPackages = defaultImports.filter { it.isAllUnder }.mapNotNull { it.fqnPart().check { !it.isSubpackageOf(KotlinBuiltIns.BUILT_INS_PACKAGE_FQ_NAME) } }
         val nonKotlinAliasedTypeFqNames = builtinTypeAliases.mapNotNull { it.expandedType.constructor.declarationDescriptor?.fqNameSafe }.filter { nonKotlinDefaultImportedPackages.any(it::isSubpackageOf) }
 
+        println("!!Found ${nonKotlinAliasedTypeFqNames.size} aliased types to exclude")
         excludedImports + nonKotlinAliasedTypeFqNames
     }
 
