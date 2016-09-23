@@ -38,7 +38,7 @@ val KOTLIN_DSL_NAME = "kotlin"
 val KOTLIN_JS_DSL_NAME = "kotlin2js"
 val KOTLIN_OPTIONS_DSL_NAME = "kotlinOptions"
 
-abstract class KotlinSourceSetProcessor<T : AbstractKotlinCompile<*>>(
+internal abstract class KotlinSourceSetProcessor<T : AbstractKotlinCompile<*>>(
         val project: Project,
         val javaBasePlugin: JavaBasePlugin,
         val sourceSet: SourceSet,
@@ -91,7 +91,7 @@ abstract class KotlinSourceSetProcessor<T : AbstractKotlinCompile<*>>(
     protected abstract fun doCreateTask(project: Project, taskName: String): T
 }
 
-class Kotlin2JvmSourceSetProcessor(
+internal class Kotlin2JvmSourceSetProcessor(
         project: Project,
         javaBasePlugin: JavaBasePlugin,
         sourceSet: SourceSet,
@@ -166,7 +166,7 @@ class Kotlin2JvmSourceSetProcessor(
     }
 }
 
-class Kotlin2JsSourceSetProcessor(
+internal class Kotlin2JsSourceSetProcessor(
         project: Project,
         javaBasePlugin: JavaBasePlugin,
         sourceSet: SourceSet,
@@ -208,7 +208,7 @@ class Kotlin2JsSourceSetProcessor(
 
 
 abstract class AbstractKotlinPlugin(val tasksProvider: KotlinTasksProvider, val kotlinSourceSetProvider: KotlinSourceSetProvider, val kotlinPluginVersion: String) : Plugin<Project> {
-    abstract fun buildSourceSetProcessor(project: Project, javaBasePlugin: JavaBasePlugin, sourceSet: SourceSet, kotlinPluginVersion: String): KotlinSourceSetProcessor<*>
+    internal abstract fun buildSourceSetProcessor(project: Project, javaBasePlugin: JavaBasePlugin, sourceSet: SourceSet, kotlinPluginVersion: String): KotlinSourceSetProcessor<*>
 
     override fun apply(project: Project) {
         val javaBasePlugin = project.plugins.apply(JavaBasePlugin::class.java)
@@ -509,7 +509,7 @@ private fun loadSubplugins(project: Project): SubpluginEnvironment {
     }
 }
 
-class SubpluginEnvironment(
+internal class SubpluginEnvironment(
         val subpluginClasspaths: Map<KotlinGradleSubplugin<KotlinCompile>, List<File>>,
         val subplugins: List<KotlinGradleSubplugin<KotlinCompile>>
 ) {
