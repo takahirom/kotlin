@@ -238,6 +238,7 @@ public final class StaticContext {
                 expression = Namer.kotlinObject();
             }
             // Don't generate qualifier for top-level native declarations
+            // Don't generate qualifier for local declarations
             else if (isNativeObject(suggested.getDescriptor()) && !isNativeObject(suggested.getScope()) ||
                      suggested.getDescriptor() instanceof CallableDescriptor && suggested.getScope() instanceof FunctionDescriptor) {
                 expression = null;

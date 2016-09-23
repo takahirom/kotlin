@@ -154,4 +154,8 @@ public class FunctionTest extends AbstractExpressionTest {
     public void testManglingClashFunctionsAndClasses() throws Exception {
         checkFooBoxIsOk();
     }
+
+    public void testLocalInInitBlock() throws Exception {
+        checkFooBoxIsOk();
+    }
 }
