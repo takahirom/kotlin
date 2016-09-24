@@ -40,9 +40,6 @@ interface ProjectContext : GlobalContext {
 
 interface ModuleContext : ProjectContext {
     val module: ModuleDescriptor
-
-    val builtIns: KotlinBuiltIns
-        get() = module.builtIns
 }
 
 interface MutableModuleContext: ModuleContext {
