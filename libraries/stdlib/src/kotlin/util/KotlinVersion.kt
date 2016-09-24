@@ -3,7 +3,7 @@ package kotlin
 /**
  * Represents a version of the Kotlin standard library
  */
-public data class KotlinVersion(val major: Int, val minor: Int, val patch: Int) : Comparable<KotlinVersion> {
+public class KotlinVersion(val major: Int, val minor: Int, val patch: Int) : Comparable<KotlinVersion> {
     public constructor(major: Int, minor: Int) : this(major, minor, 0)
 
     private val version = versionOf(major, minor, patch)
@@ -28,6 +28,14 @@ public data class KotlinVersion(val major: Int, val minor: Int, val patch: Int) 
      */
     override fun toString(): String = "$major.$minor.$patch"
 
+    override fun equals(other: Any?): Boolean {
+        if (this === other) return true
+        val otherVersion = (other as? KotlinVersion) ?: return false
+        return this.version == otherVersion.version
+    }
+
+    override fun hashCode(): Int = version
+
     override fun compareTo(other: KotlinVersion): Int = version - other.version
 
     public fun isAtLeast(major: Int, minor: Int): Boolean =
@@ -47,6 +55,7 @@ public data class KotlinVersion(val major: Int, val minor: Int, val patch: Int) 
         /**
          * Returns the current version of the Kotlin standard library
          */
+        @kotlin.jvm.JvmField
         public val CURRENT: KotlinVersion = KotlinVersion(1, 1, 0)
 
         // should we have 'parse'?
