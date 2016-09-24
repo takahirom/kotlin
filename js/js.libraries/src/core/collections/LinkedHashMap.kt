@@ -21,7 +21,7 @@ package kotlin.collections
 
 import kotlin.collections.MutableMap.MutableEntry
 
-open class LinkedHashMap<K, V> : HashMap<K, V>, Map<K, V> {
+public open class LinkedHashMap<K, V> : HashMap<K, V>, Map<K, V> {
 
     /**
      * The entry we use includes next/prev pointers for a doubly-linked circular
