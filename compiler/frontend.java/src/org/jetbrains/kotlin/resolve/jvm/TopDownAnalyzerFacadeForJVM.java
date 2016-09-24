@@ -36,7 +36,6 @@ import org.jetbrains.kotlin.frontend.java.di.InjectionKt;
 import org.jetbrains.kotlin.incremental.components.LookupTracker;
 import org.jetbrains.kotlin.load.kotlin.incremental.IncrementalPackageFragmentProvider;
 import org.jetbrains.kotlin.load.kotlin.incremental.IncrementalPackagePartProvider;
-import org.jetbrains.kotlin.load.kotlin.incremental.components.IncrementalCache;
 import org.jetbrains.kotlin.load.kotlin.incremental.components.IncrementalCompilationComponents;
 import org.jetbrains.kotlin.modules.Module;
 import org.jetbrains.kotlin.modules.TargetId;
@@ -44,13 +43,13 @@ import org.jetbrains.kotlin.modules.TargetIdKt;
 import org.jetbrains.kotlin.name.Name;
 import org.jetbrains.kotlin.platform.JvmBuiltIns;
 import org.jetbrains.kotlin.psi.KtFile;
-import org.jetbrains.kotlin.resolve.BindingContext;
 import org.jetbrains.kotlin.resolve.BindingTrace;
 import org.jetbrains.kotlin.resolve.TopDownAnalysisMode;
 import org.jetbrains.kotlin.resolve.jvm.extensions.AnalysisCompletedHandlerExtension;
 import org.jetbrains.kotlin.resolve.jvm.extensions.PackageFragmentProviderExtension;
 import org.jetbrains.kotlin.resolve.jvm.platform.JvmPlatform;
 import org.jetbrains.kotlin.resolve.lazy.declarations.FileBasedDeclarationProviderFactory;
+import org.jetbrains.kotlin.storage.StorageManager;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -66,19 +65,15 @@ public enum TopDownAnalyzerFacadeForJVM {
             @NotNull Collection<KtFile> files,
             @NotNull BindingTrace trace,
             @NotNull CompilerConfiguration configuration,
-            @NotNull PackagePartProvider packagePartProvider
+            @NotNull PackagePartProvider initialPackagePartProvider
     ) {
+        StorageManager storageManager = moduleContext.getStorageManager();
         Project project = moduleContext.getProject();
+        ModuleDescriptor moduleDescriptor = moduleContext.getModule();
 
-        FileBasedDeclarationProviderFactory providerFactory =
-                new FileBasedDeclarationProviderFactory(moduleContext.getStorageManager(), files);
-
-        IncrementalCompilationComponents incrementalCompilationComponents =
-                configuration.get(JVMConfigurationKeys.INCREMENTAL_COMPILATION_COMPONENTS);
+        IncrementalCompilationComponents incrementalComponents = configuration.get(JVMConfigurationKeys.INCREMENTAL_COMPILATION_COMPONENTS);
         LookupTracker lookupTracker =
-                incrementalCompilationComponents != null
-                ? incrementalCompilationComponents.getLookupTracker()
-                : LookupTracker.Companion.getDO_NOTHING();
+                incrementalComponents != null ? incrementalComponents.getLookupTracker() : LookupTracker.Companion.getDO_NOTHING();
 
         List<TargetId> targetIds = null;
         List<Module> modules = configuration.get(JVMConfigurationKeys.MODULES);
@@ -90,14 +85,13 @@ public enum TopDownAnalyzerFacadeForJVM {
             }
         }
 
-        packagePartProvider = IncrementalPackagePartProvider.create(
-                packagePartProvider, files, targetIds, incrementalCompilationComponents, moduleContext.getStorageManager()
-        );
+        PackagePartProvider packagePartProvider =
+                IncrementalPackagePartProvider.create(initialPackagePartProvider, files, targetIds, incrementalComponents, storageManager);
 
         ContainerForTopDownAnalyzerForJvm container = InjectionKt.createContainerForTopDownAnalyzerForJvm(
                 moduleContext,
                 trace,
-                providerFactory,
+                new FileBasedDeclarationProviderFactory(storageManager, files),
                 GlobalSearchScope.allScope(project),
                 lookupTracker,
                 packagePartProvider,
@@ -106,15 +100,12 @@ public enum TopDownAnalyzerFacadeForJVM {
 
         List<PackageFragmentProvider> additionalProviders = new ArrayList<PackageFragmentProvider>();
 
-        if (targetIds != null && incrementalCompilationComponents != null) {
+        if (targetIds != null && incrementalComponents != null) {
             for (TargetId targetId : targetIds) {
-                IncrementalCache incrementalCache = incrementalCompilationComponents.getIncrementalCache(targetId);
-
                 additionalProviders.add(
                         new IncrementalPackageFragmentProvider(
-                                files, moduleContext.getModule(), moduleContext.getStorageManager(),
-                                container.getDeserializationComponentsForJava().getComponents(),
-                                incrementalCache, targetId
+                                files, moduleDescriptor, storageManager, container.getDeserializationComponentsForJava().getComponents(),
+                                incrementalComponents.getIncrementalCache(targetId), targetId
                         )
                 );
             }
@@ -122,25 +113,18 @@ public enum TopDownAnalyzerFacadeForJVM {
         additionalProviders.add(container.getJavaDescriptorResolver().getPackageFragmentProvider());
 
         for (PackageFragmentProviderExtension extension : PackageFragmentProviderExtension.Companion.getInstances(project)) {
-            PackageFragmentProvider provider = extension.getPackageFragmentProvider(
-                    project, moduleContext.getModule(), moduleContext.getStorageManager(), trace, null);
+            PackageFragmentProvider provider = extension.getPackageFragmentProvider(project, moduleDescriptor, storageManager, trace, null);
             if (provider != null) additionalProviders.add(provider);
         }
 
         container.getLazyTopDownAnalyzerForTopLevel().analyzeFiles(TopDownAnalysisMode.TopLevelDeclarations, files, additionalProviders);
 
-        BindingContext bindingContext = trace.getBindingContext();
-        ModuleDescriptor module = moduleContext.getModule();
-
-        Collection<AnalysisCompletedHandlerExtension> analysisCompletedHandlerExtensions =
-                AnalysisCompletedHandlerExtension.Companion.getInstances(moduleContext.getProject());
-
-        for (AnalysisCompletedHandlerExtension extension : analysisCompletedHandlerExtensions) {
-            AnalysisResult result = extension.analysisCompleted(project, module, trace, files);
+        for (AnalysisCompletedHandlerExtension extension : AnalysisCompletedHandlerExtension.Companion.getInstances(project)) {
+            AnalysisResult result = extension.analysisCompleted(project, moduleDescriptor, trace, files);
             if (result != null) return result;
         }
 
-        return AnalysisResult.success(bindingContext, module);
+        return AnalysisResult.success(trace.getBindingContext(), moduleDescriptor);
     }
 
     @NotNull
