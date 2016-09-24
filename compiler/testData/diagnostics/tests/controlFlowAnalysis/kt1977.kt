@@ -3,7 +3,7 @@ package kt1977
 //KT-1977 Wrong 'unused expression' in catch
 fun strToInt(s : String) : Int? =
 try {
-    Integer.parseInt(s)
+    <!PLATFORM_CLASS_MAPPED_TO_KOTLIN!>Integer<!>.parseInt(s)
 } catch(e : NumberFormatException) {
     null
 }
@@ -12,7 +12,7 @@ try {
 fun test1(s : String) : Int? {
     return try {
         <!UNUSED_EXPRESSION!>88<!>
-        Integer.parseInt(s)
+        <!PLATFORM_CLASS_MAPPED_TO_KOTLIN!>Integer<!>.parseInt(s)
         22
     }
     catch (e: NumberFormatException) {
@@ -26,7 +26,7 @@ fun test1(s : String) : Int? {
 fun test2(s : String) : Int? {
     return try {
         <!UNUSED_EXPRESSION!>88<!>
-        Integer.parseInt(s)
+        <!PLATFORM_CLASS_MAPPED_TO_KOTLIN!>Integer<!>.parseInt(s)
         22
     } finally {
             <!UNUSED_LAMBDA_EXPRESSION!>{

@@ -38,7 +38,7 @@ class JavaPerformanceTest(context: Context, attrs: AttributeSet, defStyle: Int) 
             cachedRect = Rect(0, 0, 50, 100)
         }
 
-        val b = java.lang.Boolean.valueOf(true)!! // auto-boxing
+        val b = java.lang.<warning descr="[PLATFORM_CLASS_MAPPED_TO_KOTLIN] This class shouldn't be used in Kotlin. Use kotlin.Boolean instead.">Boolean</warning>.valueOf(true)!! // auto-boxing
         dummy(1, 2)
 
         // Non-allocations
@@ -61,7 +61,7 @@ class JavaPerformanceTest(context: Context, attrs: AttributeSet, defStyle: Int) 
         // Allocations are okay here
         java.lang.String("foo")
         val s = java.lang.String("bar")
-        val b = java.lang.Boolean.valueOf(true)!! // auto-boxing
+        val b = java.lang.<warning descr="[PLATFORM_CLASS_MAPPED_TO_KOTLIN] This class shouldn't be used in Kotlin. Use kotlin.Boolean instead.">Boolean</warning>.valueOf(true)!! // auto-boxing
 
 
         // Sparse array candidates
@@ -150,7 +150,7 @@ class JavaPerformanceTest(context: Context, attrs: AttributeSet, defStyle: Int) 
         val d1 = 1.0
 
         // The following should not generate errors:
-        val i3 = Integer.valueOf(42)
+        val i3 = <warning descr="[PLATFORM_CLASS_MAPPED_TO_KOTLIN] This class shouldn't be used in Kotlin. Use kotlin.Int instead.">Integer</warning>.valueOf(42)
     }
 
     private val mAllowCrop: Boolean = false

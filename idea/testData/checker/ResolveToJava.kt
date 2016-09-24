@@ -12,8 +12,8 @@ val l : MutableList<in Int> = ArrayList<Int>()
 fun test(<warning>l</warning> : List<Int>) {
   val <warning>x</warning> : java.<error>List</error>
   val <warning>y</warning> : List<Int>
-  val <warning>b</warning> : <warning>java.lang.Object</warning>
-  val <warning>a</warning> : <warning>java.util.List<Int></warning>
+  val <warning>b</warning> : java.lang.<warning>Object</warning>
+  val <warning>a</warning> : java.util.<warning>List</warning><Int>
   val <warning>z</warning> : java.<error>utils</error>.<error>List</error><Int>
 
   val <warning>f</warning> : java.io.File? = null
@@ -40,9 +40,9 @@ fun test(<warning>l</warning> : List<Int>) {
 
   PrintStream("sdf")
 
-  val c : <warning>Com<Int></warning>? = null
+  val c : <warning>Com</warning><Int>? = null
 
-  checkSubtype<<warning>java.lang.Comparable<Int></warning>?>(c)
+  checkSubtype<java.lang.<warning>Comparable</warning><Int>?>(c)
 
 //  Collections.sort<Integer>(ArrayList<Integer>())
 }

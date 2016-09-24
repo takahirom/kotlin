@@ -762,12 +762,7 @@ class TypeResolver(
             }
         }
 
-        val result = qualifiedExpressionResolver.resolveDescriptorForType(userType, scope, trace, isDebuggerContext)
-        if (result.classifierDescriptor != null) {
-            PlatformTypesMappedToKotlinChecker.reportPlatformClassMappedToKotlin(
-                    moduleDescriptor, trace, userType, result.classifierDescriptor)
-        }
-        return result
+        return qualifiedExpressionResolver.resolveDescriptorForType(userType, scope, trace, isDebuggerContext)
     }
 
     companion object {

@@ -6,5 +6,5 @@ val <T : Any> KClass<T>.java: Class<T> get() = null!!
 
 val <T : Any> KClass<T>.foo: Any?
     get() {
-        return java.lang.Integer::hashCode
+        return java.lang.<!PLATFORM_CLASS_MAPPED_TO_KOTLIN!>Integer<!>::hashCode
     }

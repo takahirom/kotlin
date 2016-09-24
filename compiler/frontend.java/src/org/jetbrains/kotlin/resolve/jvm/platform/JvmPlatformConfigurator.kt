@@ -64,7 +64,9 @@ object JvmPlatformConfigurator : PlatformConfigurator(
                 JavaTypeAccessibilityChecker()
         ),
 
-        additionalClassifierUsageCheckers = listOf(),
+        additionalClassifierUsageCheckers = listOf(
+                JvmTypesMappedToKotlinChecker
+        ),
 
         additionalAnnotationCheckers = listOf(
                 RepeatableAnnotationChecker,

@@ -28,7 +28,6 @@ import org.jetbrains.kotlin.name.Name
 import org.jetbrains.kotlin.psi.KtImportDirective
 import org.jetbrains.kotlin.psi.KtPsiUtil
 import org.jetbrains.kotlin.resolve.BindingTrace
-import org.jetbrains.kotlin.resolve.PlatformTypesMappedToKotlinChecker
 import org.jetbrains.kotlin.resolve.QualifiedExpressionResolver
 import org.jetbrains.kotlin.resolve.scopes.DescriptorKindFilter
 import org.jetbrains.kotlin.resolve.scopes.ImportingScope
@@ -81,15 +80,9 @@ class LazyImportResolver(
 ) : ImportResolver {
     private val importedScopesProvider = storageManager.createMemoizedFunctionWithNullableValues {
         directive: KtImportDirective ->
-            val directiveImportScope = qualifiedExpressionResolver.processImportReference(
-                    directive, moduleDescriptor, traceForImportResolve, excludedImportNames, packageFragment) ?: return@createMemoizedFunctionWithNullableValues null
-
-            if (!directive.isAllUnder) {
-                PlatformTypesMappedToKotlinChecker.checkPlatformTypesMappedToKotlin(
-                        moduleDescriptor, traceForImportResolve, directive, directiveImportScope.getContributedDescriptors())
-            }
-
-            directiveImportScope
+        qualifiedExpressionResolver.processImportReference(
+                directive, moduleDescriptor, traceForImportResolve, excludedImportNames, packageFragment
+        )
     }
 
     override fun forceResolveAllImports() {
