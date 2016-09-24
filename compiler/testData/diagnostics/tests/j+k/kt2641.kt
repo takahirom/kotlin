@@ -3,7 +3,7 @@
 package a
 
 import java.util.<!PLATFORM_CLASS_MAPPED_TO_KOTLIN!>Iterator<!>
-import <!PLATFORM_CLASS_MAPPED_TO_KOTLIN!>java.lang.Comparable<!> as Comp
+import java.lang.<!PLATFORM_CLASS_MAPPED_TO_KOTLIN!>Comparable<!> as Comp
 
 fun bar(any: Any): java.lang.<!PLATFORM_CLASS_MAPPED_TO_KOTLIN!>Iterable<!><Int>? {
     val <!UNUSED_VARIABLE!>a<!>: java.lang.<!PLATFORM_CLASS_MAPPED_TO_KOTLIN!>Comparable<!><String>? = null

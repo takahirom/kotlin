@@ -3,7 +3,7 @@ import java.util.*
 import <error>utils</error>.*
 
 import java.io.PrintStream
-import <warning>java.lang.Comparable</warning> as Com
+import java.lang.<warning>Comparable</warning> as Com
 
 fun <T> checkSubtype(t: T) = t
 
