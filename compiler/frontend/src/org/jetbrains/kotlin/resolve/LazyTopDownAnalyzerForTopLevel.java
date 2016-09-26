@@ -25,11 +25,11 @@ import org.jetbrains.kotlin.descriptors.impl.ModuleDescriptorImpl;
 import org.jetbrains.kotlin.psi.KtFile;
 import org.jetbrains.kotlin.psi.KtScript;
 import org.jetbrains.kotlin.resolve.calls.smartcasts.DataFlowInfoFactory;
+import org.jetbrains.kotlin.resolve.lazy.FileScopeProvider;
 import org.jetbrains.kotlin.resolve.lazy.KotlinCodeAnalyzer;
-import org.jetbrains.kotlin.resolve.lazy.ImportResolver;
 
-import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
 
 public class LazyTopDownAnalyzerForTopLevel {
@@ -57,8 +57,9 @@ public class LazyTopDownAnalyzerForTopLevel {
         }
         else {
             provider = new CompositePackageFragmentProvider(CollectionsKt.plus(
-                    Arrays.asList(codeAnalyzer.getPackageFragmentProvider()),
-                    additionalProviders));
+                    Collections.singletonList(codeAnalyzer.getPackageFragmentProvider()),
+                    additionalProviders
+            ));
         }
 
         ((ModuleDescriptorImpl) codeAnalyzer.getModuleDescriptor()).initialize(provider);
@@ -71,27 +72,6 @@ public class LazyTopDownAnalyzerForTopLevel {
             @NotNull TopDownAnalysisMode topDownAnalysisMode,
             @NotNull Collection<? extends PsiElement> elements
     ) {
-        TopDownAnalysisContext c = lazyTopDownAnalyzer.analyzeDeclarations(topDownAnalysisMode, elements, DataFlowInfoFactory.EMPTY);
-
-        resolveImportsInAllFiles(c, codeAnalyzer);
-
-        return c;
-    }
-
-    private static void resolveImportsInAllFiles(TopDownAnalysisContext c, KotlinCodeAnalyzer resolveSession) {
-        for (KtFile file : c.getFiles()) {
-            resolveAndCheckImports(file, resolveSession);
-        }
-
-        for (KtScript script : c.getScripts().keySet()) {
-            resolveAndCheckImports(script.getContainingKtFile(), resolveSession);
-        }
-    }
-
-    private static void resolveAndCheckImports(@NotNull KtFile file, @NotNull KotlinCodeAnalyzer resolveSession) {
-        ImportResolver importResolver = resolveSession.getFileScopeProvider().getImportResolver(file);
-        importResolver.forceResolveAllImports();
+        return lazyTopDownAnalyzer.analyzeDeclarations(topDownAnalysisMode, elements, DataFlowInfoFactory.EMPTY);
     }
 }
-
-
