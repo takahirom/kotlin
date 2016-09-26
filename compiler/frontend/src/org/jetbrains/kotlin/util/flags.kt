@@ -16,4 +16,4 @@
 
 package org.jetbrains.kotlin.util
 
-val PRESERVE_1_0_4_COMPATIBILITY: Boolean = System.getProperty("preserve.1.0.4.compatibility") == "1"
+val PRESERVE_1_0_4_COMPATIBILITY = true
