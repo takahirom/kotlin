@@ -18,7 +18,10 @@ package org.jetbrains.kotlin.resolve.scopes
 
 import org.jetbrains.kotlin.descriptors.ModuleDescriptor
 import org.jetbrains.kotlin.descriptors.PackageViewDescriptor
+import org.jetbrains.kotlin.descriptors.PropertyDescriptor
+import org.jetbrains.kotlin.descriptors.SimpleFunctionDescriptor
 import org.jetbrains.kotlin.descriptors.impl.SubpackagesScope
+import org.jetbrains.kotlin.incremental.components.LookupLocation
 import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.name.Name
 import org.jetbrains.kotlin.utils.Printer
@@ -32,4 +35,12 @@ class SubpackagesImportingScope(
     override fun getContributedPackage(name: Name): PackageViewDescriptor? = getPackage(name)
 
     override fun printStructure(p: Printer) = printScopeStructure(p)
+
+    override fun getContributedVariables(name: Name, location: LookupLocation): Collection<PropertyDescriptor> {
+        return super.getContributedVariables(name, location)
+    }
+
+    override fun getContributedFunctions(name: Name, location: LookupLocation): Collection<SimpleFunctionDescriptor> {
+        return super.getContributedFunctions(name, location)
+    }
 }
