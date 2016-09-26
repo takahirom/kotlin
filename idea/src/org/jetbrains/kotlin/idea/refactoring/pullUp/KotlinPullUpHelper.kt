@@ -40,13 +40,18 @@ import org.jetbrains.kotlin.idea.intentions.setType
 import org.jetbrains.kotlin.idea.refactoring.createJavaField
 import org.jetbrains.kotlin.idea.refactoring.dropOverrideKeywordIfNecessary
 import org.jetbrains.kotlin.idea.refactoring.isCompanionMemberOf
+import org.jetbrains.kotlin.idea.refactoring.memberInfo.KtPsiClassWrapper
+import org.jetbrains.kotlin.idea.refactoring.memberInfo.toKtDeclarationWrapperAware
 import org.jetbrains.kotlin.idea.refactoring.safeDelete.removeOverrideModifier
 import org.jetbrains.kotlin.idea.util.anonymousObjectSuperTypeOrNull
 import org.jetbrains.kotlin.idea.util.psi.patternMatching.KotlinPsiUnifier
 import org.jetbrains.kotlin.lexer.KtModifierKeywordToken
 import org.jetbrains.kotlin.lexer.KtTokens
 import org.jetbrains.kotlin.psi.*
-import org.jetbrains.kotlin.psi.psiUtil.*
+import org.jetbrains.kotlin.psi.psiUtil.allChildren
+import org.jetbrains.kotlin.psi.psiUtil.asAssignment
+import org.jetbrains.kotlin.psi.psiUtil.getStrictParentOfType
+import org.jetbrains.kotlin.psi.psiUtil.parentsWithSelf
 import org.jetbrains.kotlin.resolve.BindingContext
 import org.jetbrains.kotlin.resolve.DescriptorUtils
 import org.jetbrains.kotlin.resolve.calls.callUtil.getResolvedCall
@@ -324,7 +329,8 @@ class KotlinPullUpHelper(
         return clashingSuperDescriptor.source.getPsi() as? KtCallableDeclaration
     }
 
-    private fun moveSuperInterface(member: KtClass, substitutor: PsiSubstitutor) {
+    private fun moveSuperInterface(member: PsiNamedElement, substitutor: PsiSubstitutor) {
+        val realMemberPsi = if (member is KtPsiClassWrapper) member.psiClass else member
         val classDescriptor = data.memberDescriptors[member] as? ClassDescriptor ?: return
         val currentSpecifier = data.sourceClass.getSuperTypeEntryByDescriptor(classDescriptor, data.sourceClassContext) ?: return
         when (data.targetClass) {
@@ -339,7 +345,7 @@ class KotlinPullUpHelper(
                 val sourcePsiClass = data.sourceClass.toLightClass() ?: return
                 val superRef = sourcePsiClass.implementsList
                                        ?.referenceElements
-                                       ?.firstOrNull { it.resolve()?.unwrapped == member }
+                                       ?.firstOrNull { it.resolve()?.unwrapped == realMemberPsi }
                                 ?: return
                 val superTypeForTarget = substitutor.substitute(elementFactory.createType(superRef))
 
@@ -425,9 +431,9 @@ class KotlinPullUpHelper(
     }
 
     override fun move(info: MemberInfoBase<PsiMember>, substitutor: PsiSubstitutor) {
-        val member = info.member.namedUnwrappedElement as? KtNamedDeclaration ?: return
+        val member = info.member.toKtDeclarationWrapperAware() ?: return
 
-        if (member is KtClass && info.overrides != null)  {
+        if ((member is KtClass || member is KtPsiClassWrapper) && info.overrides != null)  {
             moveSuperInterface(member, substitutor)
             return
         }
