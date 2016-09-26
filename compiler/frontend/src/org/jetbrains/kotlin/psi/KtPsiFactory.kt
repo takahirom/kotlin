@@ -537,6 +537,7 @@ class KtPsiFactory(private val project: Project) {
     class CallableBuilder(private val target: Target) {
         enum class Target {
             FUNCTION,
+            CONSTRUCTOR,
             READ_ONLY_PROPERTY
         }
 
@@ -555,7 +556,7 @@ class KtPsiFactory(private val project: Project) {
         private var state = State.MODIFIERS
 
         private fun closeParams() {
-            if (target == Target.FUNCTION) {
+            if (target == Target.FUNCTION || target == Target.CONSTRUCTOR) {
                 assert(state == State.FIRST_PARAM || state == State.REST_PARAMS)
                 sb.append(")")
             }
@@ -571,6 +572,7 @@ class KtPsiFactory(private val project: Project) {
             }
             val keyword = when (target) {
                 Target.FUNCTION -> "fun"
+                Target.CONSTRUCTOR -> ""
                 Target.READ_ONLY_PROPERTY -> "val"
             }
             sb.append("$keyword ")
@@ -579,7 +581,7 @@ class KtPsiFactory(private val project: Project) {
         }
 
         private fun bodyPrefix() = when (target) {
-            Target.FUNCTION -> ""
+            Target.FUNCTION, Target.CONSTRUCTOR -> ""
             Target.READ_ONLY_PROPERTY -> "\nget()"
         }
 
@@ -591,7 +593,7 @@ class KtPsiFactory(private val project: Project) {
             return this
         }
 
-        fun typeParams(values: Collection<String>): CallableBuilder {
+        fun typeParams(values: Collection<String> = emptyList()): CallableBuilder {
             placeKeyword()
             if (!values.isEmpty()) {
                 sb.append(values.joinToString(", ", "<", "> ", -1, ""))
@@ -614,7 +616,7 @@ class KtPsiFactory(private val project: Project) {
 
             sb.append(name)
             when (target) {
-                Target.FUNCTION -> {
+                Target.FUNCTION, Target.CONSTRUCTOR -> {
                     sb.append("(")
                     state = State.FIRST_PARAM
                 }
@@ -625,14 +627,17 @@ class KtPsiFactory(private val project: Project) {
             return this
         }
 
-        fun param(name: String, type: String): CallableBuilder {
-            assert(target == Target.FUNCTION)
+        fun param(name: String, type: String, defaultValue: String? = null): CallableBuilder {
+            assert(target == Target.FUNCTION || target == Target.CONSTRUCTOR)
             assert(state == State.FIRST_PARAM || state == State.REST_PARAMS)
 
             if (state == State.REST_PARAMS) {
                 sb.append(", ")
             }
             sb.append(name).append(": ").append(type)
+            if (defaultValue != null) {
+                sb.append("= ").append(defaultValue)
+            }
             if (state == State.FIRST_PARAM) {
                 state = State.REST_PARAMS
             }
@@ -654,11 +659,20 @@ class KtPsiFactory(private val project: Project) {
         }
 
         fun typeConstraints(values: Collection<String>): CallableBuilder {
-            assert(state == State.TYPE_CONSTRAINTS)
+            assert(state == State.TYPE_CONSTRAINTS && target != Target.CONSTRUCTOR)
 
             if (!values.isEmpty()) {
                 sb.append(values.joinToString(", ", " where ", "", -1, ""))
             }
+            state = State.BODY
+
+            return this
+        }
+
+        fun superDelegation(argumentList: String): CallableBuilder {
+            assert(state == State.TYPE_CONSTRAINTS && target == Target.CONSTRUCTOR)
+
+            sb.append(": super").append(argumentList)
             state = State.BODY
 
             return this

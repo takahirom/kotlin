@@ -1,0 +1,9 @@
+class WithProperties {
+    val x: Int
+    val y: Int
+
+    constructor(x: Int, y: Int = 7) {
+        this.x = x
+        this.y = y
+    }
+}
