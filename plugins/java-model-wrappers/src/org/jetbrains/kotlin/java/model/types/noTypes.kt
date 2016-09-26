@@ -26,7 +26,6 @@ object JePackageTypeMirror : JeNoType {
     override fun getKind() = TypeKind.PACKAGE
     override fun <R : Any?, P : Any?> accept(v: TypeVisitor<R, P>, p: P) = v.visitNoType(this, p)
     override fun toString() = "<package>"
-
 }
 
 object JeNoneType : JeNoType {

@@ -32,7 +32,7 @@ import javax.lang.model.element.VariableElement
 class JeVariableElement(
         psi: PsiVariable,
         override val registry: JeElementRegistry
-) : JeElement, VariableElement, JeModifierListOwner, JeAnnotationOwner {
+) : JeElement, VariableElement, JeModifierListOwner, JeAnnotationOwner { // JeAbstractElement
     init { registry.register(this) }
 
     private val disposablePsi = psi.toDisposable()

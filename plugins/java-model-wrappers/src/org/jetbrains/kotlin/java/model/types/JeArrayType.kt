@@ -26,6 +26,7 @@ import javax.lang.model.type.TypeKind
 import javax.lang.model.type.TypeMirror
 import javax.lang.model.type.TypeVisitor
 
+// to je abstract type?
 class JeArrayType(
         psiType: PsiArrayType,
         psiManager: PsiManager,

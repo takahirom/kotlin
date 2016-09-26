@@ -22,6 +22,7 @@ import javax.lang.model.type.TypeMirror
 
 //TODO support type annotations
 interface JeTypeMirror : TypeMirror, Disposable {
+    // registry
     override fun getAnnotationMirrors() = emptyList<AnnotationMirror>()
 
     override fun <A : Annotation> getAnnotation(annotationClass: Class<A>?) = null

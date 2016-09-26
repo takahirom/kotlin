@@ -2,6 +2,10 @@ annotation class Anno
 
 interface Intf
 
+abstract class Abstract
+
+open class Open
+
 @Anno
 class Test {
     fun a(map: Map<Int, Intf>) {}

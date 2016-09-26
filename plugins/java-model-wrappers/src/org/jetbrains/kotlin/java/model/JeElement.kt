@@ -25,11 +25,12 @@ import javax.lang.model.element.Element
 
 interface JeElement : Element, Disposable {
     val psi: PsiElement
+    val registry: JeElementRegistry
 }
 
 abstract class AbstractJeElement<out T : PsiElement>(
         psi: T,
-        val registry: JeElementRegistry
+        override val registry: JeElementRegistry
 ) : JeElement {
     init {
         @Suppress("LeakingThis")

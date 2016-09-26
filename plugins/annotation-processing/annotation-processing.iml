@@ -16,6 +16,22 @@
     <orderEntry type="module" module-name="util" />
     <orderEntry type="library" name="kotlin-runtime" level="project" />
     <orderEntry type="module" module-name="cli" />
+    <orderEntry type="module-library">
+      <library>
+        <CLASSES>
+          <root url="jar://$USER_HOME$/Downloads/compiler-2.2.0-rc2.jar!/" />
+          <root url="jar://$USER_HOME$/Downloads/baseLibrary-2.2.0-rc2.jar!/" />
+          <root url="jar://$USER_HOME$/Downloads/compilerCommon-2.2.0-rc2.jar!/" />
+        </CLASSES>
+        <JAVADOC />
+        <SOURCES>
+          <root url="jar://$USER_HOME$/Downloads/compiler-2.2.0-rc2-sources.jar!/" />
+          <root url="jar://$USER_HOME$/Downloads/compiler-2.2.0-rc2-sources.jar!/" />
+          <root url="jar://$USER_HOME$/Downloads/baseLibrary-2.2.0-rc2-sources.jar!/" />
+          <root url="jar://$USER_HOME$/Downloads/compilerCommon-2.2.0-rc2-sources.jar!/" />
+        </SOURCES>
+      </library>
+    </orderEntry>
     <orderEntry type="module" module-name="backend" />
   </component>
 </module>
