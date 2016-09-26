@@ -103,7 +103,7 @@ public class OverrideResolver {
     private void checkOverridesInAClass(@NotNull ClassDescriptorWithResolutionScopes classDescriptor, @NotNull KtClassOrObject klass) {
         // Check overrides for internal consistency
         for (CallableMemberDescriptor member : classDescriptor.getDeclaredCallableMembers()) {
-            checkOverrideForMember(member);
+            checkOverrideForClassMember(classDescriptor, member);
         }
 
         CollectErrorInformationForInheritedMembersStrategy inheritedMemberErrors =
@@ -580,13 +580,79 @@ public class OverrideResolver {
         void nothingToOverride(@NotNull CallableMemberDescriptor overriding);
     }
 
-    private void checkOverrideForMember(@NotNull final CallableMemberDescriptor declared) {
+    private void checkOverrideForClassMember(@NotNull ClassDescriptor classDescriptor, @NotNull CallableMemberDescriptor declared) {
         if (declared.getKind() == CallableMemberDescriptor.Kind.SYNTHESIZED) {
             if (DataClassDescriptorResolver.INSTANCE.isComponentLike(declared.getName())) {
                 checkOverrideForComponentFunction(declared);
             }
             return;
         }
+
+        switch (declared.getKind()) {
+            case DECLARATION:
+                checkOverrideForMemberDeclaration(declared);
+                break;
+            case DELEGATION:
+                checkOverrideConflictsForMemberDelegation(classDescriptor, declared);
+                break;
+            case FAKE_OVERRIDE:
+            case SYNTHESIZED:
+                break;
+        }
+    }
+
+    private void checkOverrideConflictsForMemberDelegation(
+            @NotNull ClassDescriptor classDescriptor,
+            @NotNull CallableMemberDescriptor declared
+    ) {
+        final KtClassOrObject classOrObject = (KtClassOrObject) DescriptorToSourceUtils.descriptorToDeclaration(classDescriptor);
+
+        assert classOrObject != null : "declared descriptor is not resolved to declaration: " + classDescriptor;
+
+        checkOverridesForMember(declared, declared.getOverriddenDescriptors(), new CheckOverrideReportStrategy() {
+            @Override
+            public void overridingFinalMember(
+                    @NotNull CallableMemberDescriptor overriding, @NotNull CallableMemberDescriptor overridden
+            ) {
+                trace.report(UNSUPPORTED.on(classOrObject, "overridingFinalMember"));
+            }
+
+            @Override
+            public void returnTypeMismatchOnOverride(
+                    @NotNull CallableMemberDescriptor overriding, @NotNull CallableMemberDescriptor overridden
+            ) {
+                trace.report(UNSUPPORTED.on(classOrObject, "returnTypeMismatchOnOverride"));
+            }
+
+            @Override
+            public void propertyTypeMismatchOnOverride(
+                    @NotNull PropertyDescriptor overriding, @NotNull PropertyDescriptor overridden
+            ) {
+                trace.report(UNSUPPORTED.on(classOrObject, "propertyTypeMismatchOnOverride"));
+            }
+
+            @Override
+            public void varOverriddenByVal(
+                    @NotNull CallableMemberDescriptor overriding, @NotNull CallableMemberDescriptor overridden
+            ) {
+                trace.report(UNSUPPORTED.on(classOrObject, "varOverriddenByVal"));
+            }
+
+            @Override
+            public void cannotOverrideInvisibleMember(
+                    @NotNull CallableMemberDescriptor overriding, @NotNull CallableMemberDescriptor invisibleOverridden
+            ) {
+                trace.report(UNSUPPORTED.on(classOrObject, "cannotOverrideInvisibleMember"));
+            }
+
+            @Override
+            public void nothingToOverride(@NotNull CallableMemberDescriptor overriding) {
+                throw new IllegalStateException("nothingToOverride for " + overriding);
+            }
+        });
+    }
+
+    private void checkOverrideForMemberDeclaration(@NotNull final CallableMemberDescriptor declared) {
 
         if (declared.getKind() != CallableMemberDescriptor.Kind.DECLARATION) {
             return;
