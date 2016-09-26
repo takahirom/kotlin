@@ -206,9 +206,9 @@ class LazyTopDownAnalyzer(
 
         bodyResolver.resolveBodies(c)
 
-        ClassifierUsageChecker.check(declarations, trace, classifierUsageCheckers)
-
         resolveImportsInAllFiles(c)
+
+        ClassifierUsageChecker.check(declarations, trace, classifierUsageCheckers)
 
         return c
     }
